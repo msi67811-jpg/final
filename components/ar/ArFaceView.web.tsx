@@ -1,12 +1,13 @@
 import { createElement, useCallback, useEffect, useRef, useState } from 'react';
-import type { ArFaceViewProps } from './ArFaceView';
+import { parseSkinTone } from '@/lib/foundationMatch';
+import type { ArFaceViewProps, LightHint } from './ArFaceView';
 import { FACE_TRACKER_HTML, type ArStatus } from './faceTrackerHtml';
 
-export function ArFaceView({ makeup, compare, guide = null, onStatus }: ArFaceViewProps) {
+export function ArFaceView({ makeup, compare, guide = null, onStatus, onLightHint, onSkinTone }: ArFaceViewProps) {
   const [frame, setFrame] = useState<HTMLIFrameElement | null>(null);
-  const latest = useRef({ makeup, compare, guide, onStatus });
+  const latest = useRef({ makeup, compare, guide, onStatus, onLightHint, onSkinTone });
   useEffect(() => {
-    latest.current = { makeup, compare, guide, onStatus };
+    latest.current = { makeup, compare, guide, onStatus, onLightHint, onSkinTone };
   });
 
   const send = useCallback(
@@ -22,7 +23,7 @@ export function ArFaceView({ makeup, compare, guide = null, onStatus }: ArFaceVi
     if (!frame) return;
     const onMessage = (event: MessageEvent) => {
       if (event.source !== frame.contentWindow || typeof event.data !== 'string') return;
-      let message: { type?: string; status?: ArStatus };
+      let message: { type?: string; status?: ArStatus; value?: LightHint | null; lab?: unknown; conf?: unknown };
       try {
         message = JSON.parse(event.data);
       } catch {
@@ -34,6 +35,12 @@ export function ArFaceView({ makeup, compare, guide = null, onStatus }: ArFaceVi
         send({ type: 'guide', guide: latest.current.guide });
       } else if (message.type === 'status' && message.status) {
         latest.current.onStatus(message.status);
+      } else if (message.type === 'light_hint') {
+        const hint = message.value === 'low' || message.value === 'blown' ? message.value : null;
+        latest.current.onLightHint?.(hint);
+      } else if (message.type === 'skin_tone') {
+        const tone = parseSkinTone(message);
+        if (tone) latest.current.onSkinTone?.(tone);
       }
     };
     window.addEventListener('message', onMessage);
