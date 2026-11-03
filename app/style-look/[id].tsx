@@ -4,24 +4,23 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { openYoutubeVideo } from '@/components/celeb/VideoCard';
 import { VideoTryOn } from '@/components/celeb/VideoTryOn';
+import { VideoProductActions } from '@/components/celeb/VideoProductActions';
 import { YoutubePlayer } from '@/components/celeb/YoutubePlayer';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateViews';
 import { theme } from '@/constants/theme';
 import { useVideoTryOn } from '@/hooks/useVideoTryOn';
-import { canTryOn } from '@/lib/catalog';
-import { matchCatalogProduct, matchListedShade } from '@/lib/catalogMatch';
 import { useI18n } from '@/lib/i18n';
-import { useProducts, useStyleLooks } from '@/lib/queries';
-import { arHref, parseId, productHref } from '@/lib/routes';
+import { useStyleLooks } from '@/lib/queries';
+import { arHref, paramValue, productHref } from '@/lib/routes';
 import { styleLookGroupLabel, styleLookZoneLabel } from '@/lib/styleLookGroups';
 
 export default function StyleLookDetail() {
   const { id: rawId } = useLocalSearchParams<{ id: string }>();
-  const id = parseId(rawId);
+  const value = paramValue(rawId);
+  const id = value && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : undefined;
   const router = useRouter();
   const { t } = useI18n();
   const query = useStyleLooks();
-  const catalog = useProducts();
   const look = query.data?.find((item) => item.id === id);
   const ar = useVideoTryOn(look?.products ?? [], `style-${id ?? ''}`, look?.title ?? '');
   if (query.isPending) return <LoadingState />;
@@ -39,6 +38,10 @@ export default function StyleLookDetail() {
           {look.title}
         </Text>
         <Text style={styles.tag}>{look.tag}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('chat.style.openGuide')} style={styles.video}
+          onPress={() => router.push({ pathname: '/chat', params: { recipeKind: 'video', recipeLookId: look.id } })}>
+          <Text style={styles.videoText}>{t('chat.style.openGuide')}</Text>
+        </Pressable>
         <Pressable
           accessibilityRole="link"
           style={({ pressed }) => [styles.video, pressed && styles.pressed]}
@@ -75,8 +78,7 @@ export default function StyleLookDetail() {
                 <Text style={styles.zoneCount}>{products.length}</Text>
               </View>
               {products.map((product) => {
-                const matched = matchCatalogProduct(product, catalog.data ?? []);
-                const shade = matched ? matchListedShade(matched, product.option) : undefined;
+                const matched = product.catalogProductId ? ar.productsById[product.catalogProductId] : undefined;
                 return (
                   <View key={product.number} style={styles.product}>
                     <View style={styles.productNumber}>
@@ -91,25 +93,9 @@ export default function StyleLookDetail() {
                       <Text style={styles.option}>
                         {product.option === '원문에 명시 정보 없음' ? t('styleLooks.optionUnknown') : product.option}
                       </Text>
-                      {matched ? (
-                        <View style={styles.actions}>
-                          <Text style={styles.catalogNote}>{t('styleLooks.matched')}</Text>
-                          <Pressable
-                            accessibilityRole="button"
-                            onPress={() => router.push(productHref(matched.id))}
-                            style={styles.link}>
-                            <Text style={styles.linkText}>{t('styleLooks.openProduct')}</Text>
-                          </Pressable>
-                          {canTryOn(matched) && shade ? (
-                            <Pressable
-                              accessibilityRole="button"
-                              onPress={() => router.push(arHref({ productId: matched.id, shadeId: shade.id }))}
-                              style={styles.link}>
-                              <Text style={styles.linkText}>{t('styleLooks.tryAr')}</Text>
-                            </Pressable>
-                          ) : null}
-                        </View>
-                      ) : null}
+                      <VideoProductActions mapping={product} product={matched}
+                        onProduct={(productId, shadeId) => router.push(productHref(productId, shadeId))}
+                        onTryOn={(productId, shadeId) => router.push(arHref({ productId, shadeId }))} />
                     </View>
                   </View>
                 );

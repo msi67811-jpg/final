@@ -27,7 +27,7 @@ export function useVideoTryOn(items: VideoProductMapping[], id: string, title: s
   const router = useRouter();
   const applyLook = useMakeupStore((store) => store.applyLook);
   const endFit = useMakeupStore((store) => store.endFit);
-  const ids = [...new Set(items.flatMap((item) => item.mappingVerified === true && parseId(item.catalogProductId) && parseId(item.catalogShadeId) ? [item.catalogProductId!] : []))].sort();
+  const ids = [...new Set(items.flatMap((item) => item.mappingVerified === true && parseId(item.catalogProductId) ? [item.catalogProductId!] : []))].sort();
   const products = useQuery({
     queryKey: ['video-tryon-products', ids],
     enabled: ids.length > 0,
@@ -52,7 +52,8 @@ export function useVideoTryOn(items: VideoProductMapping[], id: string, title: s
       const look: CelebLook = { id, title, inspiration: '', description: '', thumbnailUrl: '', tutorialQuery: '', items: lookItems, makeup, tags: [] };
       applyLook(look, selected.map((item) => item.product));
     }
-    router.push(arHref({ video: true }));
+    router.push(arHref(selected.length ? { video: true } : {}));
   };
-  return { open, selectedIndices, count: selected.length, loading: ids.length > 0 && products.isPending, error: products.isError };
+  const productsById = Object.fromEntries((products.data ?? []).map((product) => [product.id, product]));
+  return { open, selectedIndices, productsById, count: selected.length, loading: ids.length > 0 && products.isPending, error: products.isError };
 }

@@ -28,6 +28,24 @@ uv run python ../../scripts/data/oliveyoung/build_catalog.py --expect-source 251
 
 ## 1. 파일 형식
 
+### 영상 제품 연결 검수
+
+연예인·스타일 영상의 제품을 `backend/api/seed/catalog.json`과 연결할 때는 `backend/api`에서 아래 순서로 작업한다. 후보는 자동 승인되지 않는다. 승인 전 영상 속 제품과 카탈로그의 브랜드·제품·옵션을 사람이 직접 비교한다.
+
+```bash
+uv run python -m app.jobs.match_video_products
+# seed/source/video_product_mapping_review.csv를 사람이 검수
+uv run python -m app.jobs.apply_video_product_mappings
+uv run python -m app.jobs.apply_video_product_mappings --write
+uv run pytest tests/test_video_product_matching.py tests/test_video_mapping_apply.py tests/test_video_mapping_integrity.py
+```
+
+- `decision`은 사람이 `approve_shade`(제품·셰이드 확인), `approve_product`(제품만 확인), `reject` 또는 빈칸으로 정한다. `reviewer`, `decidedAt`도 기입한다. 제품만 승인하면 AR에서 사용할 셰이드를 추측하지 않는다.
+- 후보 생성 시 기존 검수 결정은 보존한다. 후보·원본 제품 정보·규칙 버전이 바뀌면 `reason`의 `candidate_changed`가 표시되고 승인이 있어도 반영을 거부한다. 새 후보를 다시 검수하고 검수자가 표시를 제거한 후 승인 내용을 갱신한다.
+- 반영 잡은 기본 dry-run이다. 유효하지 않은 상품·셰이드, placeholder 셰이드, 원본 변경, 누락 또는 중복 행이 하나라도 있으면 `--write`를 거부한다. 쓰기 시 서버 JSON과 앱 개발용 사본을 함께 변경한다. `--catalog`로 검수 대상 카탈로그를 바꿀 수 있으나 배포 DB와 동일한 데이터인지 확인해야 한다.
+- `seed/source/brand_aliases.csv`에는 확인된 별칭만 `alias,brand` 형식으로 추가한다. `EXACT_MATCH`는 **검수 후보 상태**이며 사람의 승인이나 측정된 정밀도를 뜻하지 않는다.
+- 영상의 공개·임베드 상태는 `uv run python -m app.jobs.check_curated_videos --output 경로.csv`로 별도 점검할 수 있다. API 키가 없으면 호출하지 않으며 실패 후 `--from 인덱스`로 이어서 확인한다. 원본 JSON을 수정하지 않는다.
+
 `backend/api/seed/catalog.json` 하나에 세 목록이 들어갑니다. 각 항목의 모양은 앱의 [`types/index.ts`](../types/index.ts)에 있는 `Product`, `CelebLook`, `Store`와 같습니다.
 
 ```json
@@ -134,8 +152,8 @@ uv run python -m app.jobs.seed_catalog fixtures/demo_catalog.json
 학습 모델이 필요하지 않습니다. 실제 상품 적재 전에도 가짜 저장소로 API·순위·빈 결과를 검증합니다.
 
 - 입력 흐름: 저장된 피부 분석·설문 → 기기에서 고민 코드 제안 → 사용자가 확인·수정 → 추천 요청.
-- 여드름 이진 결과는 `blemish`, 모공·색소침착·주름은 기존 화면의 최고 부위 등급 3 이상일 때
-  각각 `pores`, `pigmentation`, `wrinkles`를 제안합니다. 등급은 실험값이며 가중치로 사용하지 않습니다.
+- 과거 여드름 이진 결과는 `blemish`를 제안합니다. 모공·색소침착·주름은 v4 모델의 부위 중 하나라도 유의(sigmoid ≥ 0.5)일 때
+  각각 `pores`, `pigmentation`, `wrinkles`를 제안합니다. 이전 등급 모델 결과는 최고 부위 등급 4 이상 기준을 유지합니다. 모델 점수·등급은 가중치로 사용하지 않습니다.
 - 설문의 당김·유분·민감도가 2이면 각각 `dryness`, `oiliness`, `sensitivity`를 제안합니다.
   0·1·`unknown`은 자동 제안하지 않으며 사용자가 추가·제거할 수 있습니다. 수분 추론값은 사용하지 않습니다.
 - 요청은 `{ "concerns": ["dryness", "pores"], "limit": 8 }`입니다. `limit`은 1–20이며 기본값은 8입니다.
@@ -157,3 +175,6 @@ DB 없이 확인: `backend/api`에서 `uv run pytest tests/test_recommendations.
 ## Supabase 권한
 
 프로젝트 관리자가 Supabase → Organization → Team에서 초대하고, 데이터 담당자에게는 **Developer** 역할을 줍니다(표 보기와 SQL 실행 가능, 결제·팀원 관리는 불가). 위 규칙대로 대시보드는 확인용으로만 씁니다.
+
+
+새 기초 추천의 파생 입력·검수 데이터 발행·추적 계약은 [기초 추천 v1](skincare-recommendations.md)을 따른다.

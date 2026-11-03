@@ -1,3 +1,4 @@
+import type { SkincareRequest, SkincareResponse } from '@/types/skincare';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type {
   CelebLook,
@@ -7,6 +8,7 @@ import type {
   Product,
   ProductOffers,
   ProductQuery,
+  ProductVideo,
   SimilarShadesResponse,
   SkinRecommendationRequest,
   SkinRecommendationResponse,
@@ -135,6 +137,15 @@ export function useProduct(id: string | undefined) {
   });
 }
 
+export function useProductVideos(id: string | undefined) {
+  return useQuery({
+    queryKey: ['product-videos', id],
+    queryFn: () => apiGet<{ videos: ProductVideo[] }>(`/api/products/${encodeURIComponent(id!)}/videos`),
+    select: (data) => data.videos,
+    enabled: !!id,
+  });
+}
+
 export function useProductOffers(id: string | undefined) {
   return useQuery({
     queryKey: ['offers', id],
@@ -248,4 +259,10 @@ export function useTutorials(query: string | undefined, max = 6) {
     staleTime: 60 * 60 * 1000,
     retry: 1,
   });
+}
+
+export function useSkincareRecommendations(request: SkincareRequest | undefined) {
+  return useQuery({ queryKey: ['skincare-recommendations', request],
+    queryFn: () => apiPost<SkincareResponse>('/api/recommendations/skincare', request!),
+    enabled: request !== undefined, gcTime: 0, staleTime: 0 });
 }
