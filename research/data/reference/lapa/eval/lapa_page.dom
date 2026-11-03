@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
+  video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #hud { position: absolute; left: 8px; top: 84px; padding: 6px 8px; border-radius: 6px; display: none;
+         background: rgba(0,0,0,0.55); color: #fff; font: 11px/1.4 monospace; white-space: pre; pointer-events: none; }
+</style>
+<title>OK 200</title></head>
+<body>
+<video id="video" playsinline="" muted="" autoplay=""></video>
+<canvas id="canvas"></canvas>
+<canvas id="overlay" style="pointer-events: none"></canvas>
+<div id="hud"></div>
+<script type="module">
+  const VERSION = '1.1.1';
+  const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+  const SEG_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite';
+  const FACE_UV = [0.49998,0.34747,0.50003,0.45251,0.49997,0.39763,0.48211,0.52802,0.50015,0.47284,0.49991,0.50175,0.49952,0.59894,0.28971,0.61924,0.49995,0.6876,0.49999,0.73008,0.50002,0.89295,0.50002,0.33377,0.50002,0.32078,0.50002,0.30765,0.49998,0.30472,0.49998,0.29407,0.49998,0.28062,0.49998,0.26298,0.49997,0.21863,0.49982,0.43702,0.47377,0.42609,0.10491,0.74586,0.36593,0.59042,0.33876,0.58698,0.31112,0.59054,0.27466,0.61087,0.39336,0.59629,0.34523,0.65599,0.37009,0.65392,0.31932,0.65273,0.2979,0.64641,0.24779,0.58919,0.39689,0.15724,0.2801,0.6244,0.10631,0.60004,0.20993,0.60865,0.35581,0.46559,0.47175,0.3496,0.47415,0.31981,0.43978,0.34277,0.41462,0.33346,0.45037,0.31914,0.42877,0.31731,0.37497,0.2722,0.48672,0.45237,0.4853,0.4726,0.25777,0.68551,0.40122,0.54483,0.42982,0.45138,0.42135,0.46626,0.2769,0.46794,0.48337,0.50041,0.33721,0.71712,0.29639,0.70676,0.1693,0.80619,0.44758,0.69739,0.39239,0.64611,0.35449,0.30322,0.06731,0.26989,0.44274,0.42717,0.4571,0.41521,0.38197,0.30529,0.39239,0.3058,0.27708,0.72807,0.42255,0.43677,0.38592,0.71864,0.3831,0.74416,0.33143,0.88029,0.22992,0.768,0.3645,0.81089,0.22962,0.70046,0.17329,0.72125,0.47288,0.3338,0.44683,0.33147,0.42276,0.32611,0.44531,0.41993,0.3881,0.30604,0.40304,0.29346,0.40363,0.30605,0.46004,0.44286,0.43116,0.30763,0.45218,0.30763,0.47539,0.30763,0.46583,0.22081,0.47233,0.26377,0.47309,0.28214,0.47312,0.29537,0.47303,0.30472,0.42794,0.30472,0.42648,0.29646,0.42316,0.28815,0.41831,0.27994,0.3901,0.36043,0.01395,0.43997,0.49991,0.41985,0.4132,0.3046,0.40963,0.29818,0.46808,0.39847,0.42273,0.41402,0.46308,0.40622,0.37212,0.52659,0.33456,0.50393,0.41167,0.45304,0.24218,0.85232,0.29078,0.79855,0.32734,0.74347,0.39951,0.25108,0.44173,0.73832,0.42977,0.81217,0.4122,0.8911,0.28896,0.60105,0.21894,0.56459,0.41278,0.60103,0.25714,0.64456,0.42768,0.56204,0.44834,0.46306,0.17856,0.54245,0.24731,0.54281,0.28627,0.53233,0.33283,0.53929,0.36876,0.55279,0.39896,0.56734,0.47641,0.59419,0.18924,0.47608,0.22896,0.65105,0.49073,0.4376,0.40467,0.51487,0.01947,0.59844,0.42624,0.57957,0.39699,0.4512,0.26647,0.62302,0.43912,0.48104,0.03231,0.35564,0.41905,0.61284,0.46278,0.49425,0.23898,0.22026,0.19822,0.16806,0.10755,0.45925,0.18361,0.25974,0.13441,0.66632,0.38576,0.11685,0.49097,0.42062,0.38238,0.49143,0.1744,0.60233,0.31878,0.60376,0.34336,0.5994,0.3961,0.28978,0.18788,0.41146,0.43099,0.05593,0.31899,0.10171,0.26625,0.1303,0.50002,0.80942,0.49998,0.04555,0.36617,0.60118,0.39321,0.60446,0.41037,0.60892,0.19499,0.6579,0.38866,0.63772,0.36596,0.64403,0.34336,0.64464,0.31878,0.64166,0.30141,0.63684,0.05813,0.68092,0.30141,0.61255,0.49999,0.38157,0.41584,0.3758,0.44568,0.43392,0.46584,0.37936,0.49992,0.64848,0.28872,0.18005,0.33528,0.14718,0.44051,0.09758,0.12829,0.20806,0.40877,0.62611,0.45561,0.5482,0.49988,0.09101,0.37544,0.07581,0.11421,0.38498,0.44866,0.30472,0.44802,0.29537,0.44711,0.28419,0.44483,0.26921,0.43001,0.23319,0.40679,0.31433,0.40074,0.31893,0.3924,0.3223,0.36786,0.33608,0.24792,0.39867,0.45277,0.57915,0.43639,0.64011,0.41616,0.63129,0.41339,0.30763,0.22802,0.31643,0.46827,0.64733,0.41136,0.19567,0.49999,0.53017,0.47915,0.55735,0.49997,0.56036,0.43211,0.50641,0.49989,0.13308,0.49991,0.17827,0.45655,0.1808,0.34455,0.25456,0.37891,0.42599,0.37429,0.21982,0.31969,0.42926,0.35716,0.39573,0.29528,0.37842,0.44775,0.13752,0.41099,0.49128,0.31395,0.22469,0.35413,0.18745,0.32455,0.29601,0.1891,0.3537,0.27978,0.28534,0.13382,0.3173,0.33677,0.35527,0.42988,0.53348,0.45553,0.45138,0.43711,0.4411,0.46729,0.47008,0.41471,0.66478,0.37705,0.67722,0.34411,0.67985,0.31288,0.67767,0.28353,0.66681,0.24125,0.61721,0.10299,0.53124,0.26761,0.57544,0.29788,0.56682,0.33343,0.56612,0.36643,0.57388,0.39601,0.5833,0.42012,0.58977,0.00756,0.51922,0.43295,0.43048,0.45864,0.52091,0.47347,0.45426,0.47609,0.43617,0.46847,0.44494,0.43399,0.41764,0.48352,0.43702,0.48248,0.42215,0.42645,0.6102,0.439,0.6035,0.45007,0.59957,0.28971,0.63175,0.27667,0.63663,0.51786,0.52805,0.71029,0.61924,0.52623,0.42609,0.89509,0.74586,0.63407,0.59042,0.66124,0.58698,0.68888,0.59054,0.72534,0.61087,0.60663,0.5963,0.65477,0.65599,0.62991,0.65392,0.68068,0.65273,0.7021,0.64641,0.75221,0.5892,0.60292,0.15714,0.7199,0.6244,0.89369,0.60004,0.79008,0.60865,0.644,0.46551,0.52825,0.3496,0.52585,0.31981,0.56022,0.34277,0.58538,0.33346,0.54963,0.31914,0.57123,0.31731,0.62485,0.2719,0.51305,0.45272,0.5151,0.47275,0.74225,0.68549,0.59863,0.54502,0.57034,0.45143,0.57863,0.46638,0.72309,0.46795,0.51645,0.50036,0.6628,0.71708,0.70362,0.70673,0.83071,0.80619,0.55239,0.69743,0.60761,0.64611,0.64543,0.30329,0.9327,0.26989,0.55726,0.42717,0.5429,0.41521,0.61803,0.30529,0.60759,0.3058,0.72294,0.72804,0.57741,0.43683,0.61408,0.71861,0.61691,0.74411,0.66851,0.88009,0.77009,0.76798,0.63554,0.81075,0.77039,0.70044,0.82672,0.72125,0.52712,0.3338,0.55317,0.33147,0.57724,0.32611,0.55469,0.41993,0.6119,0.30604,0.59696,0.29346,0.59637,0.30605,0.53996,0.44286,0.56884,0.30763,0.54782,0.30763,0.52461,0.30763,0.53409,0.22086,0.52767,0.26377,0.52691,0.28214,0.52688,0.29537,0.52697,0.30472,0.57206,0.30472,0.57352,0.29646,0.57684,0.28815,0.58169,0.27994,0.60994,0.36009,0.98605,0.43997,0.5868,0.3046,0.59037,0.29818,0.53192,0.39846,0.57727,0.41407,0.53692,0.40621,0.62754,0.52665,0.66559,0.50405,0.58835,0.45314,0.75782,0.85232,0.70925,0.79849,0.67268,0.74342,0.60041,0.251,0.55827,0.73833,0.5703,0.81213,0.58817,0.89096,0.71105,0.60105,0.78107,0.56459,0.58725,0.60107,0.74287,0.64455,0.57216,0.56235,0.55187,0.46343,0.82144,0.54244,0.7527,0.54282,0.71376,0.53237,0.66711,0.53933,0.6311,0.55285,0.60086,0.56753,0.52348,0.59437,0.81075,0.47607,0.77105,0.65104,0.50913,0.43728,0.59529,0.51498,0.98053,0.59844,0.5735,0.58,0.60299,0.45131,0.73353,0.62302,0.56061,0.48098,0.96769,0.35564,0.58098,0.61284,0.53773,0.49462,0.76097,0.22025,0.80178,0.16806,0.89244,0.45924,0.81635,0.25974,0.8656,0.66631,0.61407,0.11675,0.50895,0.42056,0.61794,0.49168,0.82561,0.60232,0.68122,0.60376,0.65664,0.5994,0.6039,0.28978,0.81209,0.41146,0.56801,0.05543,0.68101,0.10171,0.73375,0.1303,0.63383,0.60118,0.60679,0.60446,0.58966,0.60894,0.80502,0.65789,0.61133,0.63772,0.63404,0.64403,0.65664,0.64464,0.68122,0.64166,0.69859,0.63684,0.94187,0.68092,0.69859,0.61255,0.58418,0.37589,0.55432,0.43392,0.53415,0.37936,0.71122,0.18002,0.66463,0.14713,0.5591,0.09737,0.87171,0.20806,0.59123,0.62611,0.54434,0.54842,0.62456,0.07581,0.88577,0.38497,0.55134,0.30472,0.55198,0.29537,0.55289,0.28419,0.55517,0.26921,0.56994,0.23297,0.5932,0.31432,0.59926,0.31893,0.6076,0.3223,0.63194,0.3365,0.75203,0.39869,0.54723,0.57961,0.56354,0.64017,0.58384,0.63129,0.58661,0.30763,0.77192,0.31642,0.5316,0.64752,0.58837,0.19556,0.5208,0.55744,0.56798,0.50652,0.54328,0.18074,0.65532,0.25449,0.62101,0.42598,0.62556,0.21969,0.6802,0.42928,0.64276,0.39566,0.70466,0.37847,0.55201,0.13741,0.58907,0.49136,0.68595,0.22464,0.64573,0.18736,0.67534,0.29602,0.81086,0.35369,0.72012,0.28533,0.86615,0.31729,0.66319,0.3554,0.57008,0.53367,0.54456,0.45162,0.56276,0.44122,0.53199,0.46986,0.58527,0.66482,0.62295,0.67722,0.6559,0.67984,0.68713,0.67765,0.71648,0.6668,0.75876,0.61721,0.89701,0.53123,0.73239,0.57545,0.70211,0.56684,0.66653,0.56613,0.6335,0.57391,0.60388,0.58341,0.57966,0.59005,0.99244,0.51922,0.56719,0.43058,0.54137,0.5211,0.52656,0.45388,0.52391,0.43617,0.53153,0.44494,0.56604,0.41767,0.51631,0.43695,0.51747,0.42212,0.57359,0.61019,0.5607,0.60467,0.54976,0.60025,0.71029,0.63175,0.72333,0.63663];
+  const FACE_TRIANGLES = [356,389,264,127,34,162,368,264,389,139,162,34,267,0,302,37,72,0,11,302,0,11,0,72,349,451,350,120,121,231,452,350,451,232,231,121,267,302,269,37,39,72,303,269,302,73,72,39,357,343,350,128,121,114,277,350,343,47,114,121,350,452,357,121,128,232,453,357,452,233,232,128,299,333,297,69,67,104,332,297,333,103,104,67,175,152,396,175,171,152,377,396,152,148,152,171,280,347,330,50,101,118,348,330,347,119,118,101,269,303,270,39,40,73,304,270,303,74,73,40,9,336,151,9,151,107,337,151,336,108,107,151,344,278,360,115,131,48,279,360,278,49,48,131,262,431,418,32,194,211,424,418,431,204,211,194,304,408,270,74,40,184,409,270,408,185,184,40,272,310,407,42,183,80,415,407,310,191,80,183,322,270,410,92,186,40,409,410,270,185,40,186,347,449,348,118,119,229,450,348,449,230,229,119,434,432,430,214,210,212,422,430,432,202,212,210,313,314,18,83,18,84,17,18,314,17,84,18,307,375,306,77,76,146,291,306,375,61,146,76,259,387,260,29,30,160,388,260,387,161,160,30,286,414,384,56,157,190,398,384,414,173,190,157,418,424,406,194,182,204,335,406,424,106,204,182,367,416,364,138,135,192,434,364,416,214,192,135,391,423,327,165,98,203,358,327,423,129,203,98,298,301,284,68,54,71,251,284,301,21,71,54,4,275,5,4,5,45,281,5,275,51,45,5,254,373,253,24,23,144,374,253,373,145,144,23,320,321,307,90,77,91,375,307,321,146,91,77,280,425,411,50,187,205,427,411,425,207,205,187,421,313,200,201,200,83,18,200,313,18,83,200,335,321,406,106,182,91,405,406,321,181,91,182,405,321,404,181,180,91,320,404,321,90,91,180,17,314,16,17,16,84,315,16,314,85,84,16,425,266,426,205,206,36,423,426,266,203,36,206,369,396,400,140,176,171,377,400,396,148,171,176,391,269,322,165,92,39,270,322,269,40,39,92,417,465,413,193,189,245,464,413,465,244,245,189,257,258,386,27,159,28,385,386,258,158,28,159,260,388,467,30,247,161,466,467,388,246,161,247,248,456,419,3,196,236,399,419,456,174,236,196,333,298,332,104,103,68,284,332,298,54,68,103,285,8,417,55,193,8,168,417,8,168,8,193,340,261,346,111,117,31,448,346,261,228,31,117,285,417,441,55,221,193,413,441,417,189,193,221,327,460,326,98,97,240,328,326,460,99,240,97,277,355,329,47,100,126,371,329,355,142,126,100,309,392,438,79,218,166,439,438,392,219,166,218,381,382,256,154,26,155,341,256,382,112,155,26,360,279,420,131,198,49,429,420,279,209,49,198,365,364,379,136,150,135,394,379,364,169,135,150,355,277,437,126,217,47,343,437,277,114,47,217,443,444,282,223,52,224,283,282,444,53,224,52,281,275,363,51,134,45,440,363,275,220,45,134,431,262,395,211,170,32,369,395,262,140,32,170,337,299,338,108,109,69,297,338,299,67,69,109,335,273,321,106,91,43,375,321,273,146,43,91,348,450,349,119,120,230,451,349,450,231,230,120,467,359,342,247,113,130,446,342,359,226,130,113,282,283,334,52,105,53,293,334,283,63,53,105,250,458,462,20,242,238,461,462,458,241,238,242,276,353,300,46,70,124,383,300,353,156,124,70,325,292,324,96,95,62,308,324,292,78,62,95,283,276,293,53,63,46,300,293,276,70,46,63,447,264,345,227,116,34,372,345,264,143,34,116,352,345,346,123,117,116,340,346,345,111,116,117,1,19,274,1,44,19,354,274,19,125,19,44,248,281,456,3,236,51,363,456,281,134,51,236,425,426,427,205,207,206,436,427,426,216,206,207,380,381,252,153,22,154,256,252,381,26,154,22,391,393,269,165,39,167,267,269,393,37,167,39,199,428,200,199,200,208,421,200,428,201,208,200,330,329,266,101,36,100,371,266,329,142,100,36,422,432,273,202,43,212,287,273,432,57,212,43,290,250,328,60,99,20,462,328,250,242,20,99,258,286,385,28,158,56,384,385,286,157,56,158,342,446,353,113,124,226,265,353,446,35,226,124,257,386,259,27,29,159,387,259,386,160,159,29,430,422,431,210,211,202,424,431,422,204,202,211,445,342,276,225,46,113,353,276,342,124,113,46,424,422,335,204,106,202,273,335,422,43,202,106,306,292,307,76,77,62,325,307,292,96,62,77,366,447,352,137,123,227,345,352,447,116,227,123,302,268,303,72,73,38,271,303,268,41,38,73,371,358,266,142,36,129,423,266,358,203,129,36,327,294,460,98,240,64,455,460,294,235,64,240,294,331,278,64,48,102,279,278,331,49,102,48,303,271,304,73,74,41,272,304,271,42,41,74,427,436,434,207,214,216,432,434,436,212,216,214,304,272,408,74,184,42,407,408,272,183,42,184,394,430,395,169,170,210,431,395,430,211,210,170,395,369,378,170,149,140,400,378,369,176,140,149,296,334,299,66,69,105,333,299,334,104,105,69,417,168,351,193,122,168,6,351,168,6,168,122,280,411,352,50,123,187,376,352,411,147,187,123,319,320,325,89,96,90,307,325,320,77,90,96,285,295,336,55,107,65,296,336,295,66,65,107,404,320,403,180,179,90,319,403,320,89,90,179,330,348,329,101,100,119,349,329,348,120,119,100,334,293,333,105,104,63,298,333,293,68,63,104,323,454,366,93,137,234,447,366,454,227,234,137,16,315,15,16,15,85,316,15,315,86,85,15,429,279,358,209,129,49,331,358,279,102,49,129,15,316,14,15,14,86,317,14,316,87,86,14,8,285,9,8,9,55,336,9,285,107,55,9,329,349,277,100,47,120,350,277,349,121,120,47,252,253,380,22,153,23,374,380,253,145,23,153,402,403,318,178,88,179,319,318,403,89,179,88,351,6,419,122,196,6,197,419,6,197,6,196,324,318,325,95,96,88,319,325,318,89,88,96,397,367,365,172,136,138,364,365,367,135,138,136,288,435,397,58,172,215,367,397,435,138,215,172,438,439,344,218,115,219,278,344,439,48,219,115,271,311,272,41,42,81,310,272,311,80,81,42,5,281,195,5,195,51,248,195,281,3,51,195,273,287,375,43,146,57,291,375,287,61,57,146,396,428,175,171,175,208,199,175,428,199,208,175,268,312,271,38,41,82,311,271,312,81,82,41,444,445,283,224,53,225,276,283,445,46,225,53,254,339,373,24,144,110,390,373,339,163,110,144,295,282,296,65,66,52,334,296,282,105,52,66,346,448,347,117,118,228,449,347,448,229,228,118,454,356,447,234,227,127,264,447,356,34,127,227,336,296,337,107,108,66,299,337,296,69,66,108,151,337,10,151,10,108,338,10,337,109,108,10,278,439,294,48,64,219,455,294,439,235,219,64,407,415,292,183,62,191,308,292,415,78,191,62,358,371,429,129,209,142,355,429,371,126,142,209,345,372,340,116,111,143,265,340,372,35,143,111,352,346,280,123,50,117,347,280,346,118,117,50,295,442,282,65,52,222,443,282,442,223,222,52,19,94,354,19,125,94,370,354,94,141,94,125,295,285,442,65,222,55,441,442,285,221,55,222,419,197,248,196,3,197,195,248,197,195,197,3,359,263,255,130,25,33,249,255,263,7,33,25,275,274,440,45,220,44,457,440,274,237,44,220,300,383,301,70,71,156,368,301,383,139,156,71,417,351,465,193,245,122,412,465,351,188,122,245,466,263,467,246,247,33,359,467,263,130,33,247,389,251,368,162,139,21,301,368,251,71,21,139,379,394,378,150,149,169,395,378,394,170,169,149,351,419,412,122,188,196,399,412,419,174,196,188,426,322,436,206,216,92,410,436,322,186,92,216,393,326,164,167,164,97,2,164,326,2,97,164,354,370,461,125,241,141,462,461,370,242,141,241,0,267,164,0,164,37,393,164,267,167,37,164,11,12,302,11,72,12,268,302,12,38,12,72,12,13,268,12,38,13,312,268,13,82,13,38,293,300,298,63,68,70,301,298,300,71,70,68,340,265,261,111,31,35,446,261,265,226,35,31,280,330,425,50,205,101,266,425,330,36,101,205,423,391,426,203,206,165,322,426,391,92,165,206,429,355,420,209,198,126,437,420,355,217,126,198,391,327,393,165,167,98,326,393,327,97,98,167,457,438,440,237,220,218,344,440,438,115,218,220,382,362,341,155,112,133,463,341,362,243,133,112,457,461,459,237,239,241,458,459,461,238,241,239,434,430,364,214,135,210,394,364,430,169,210,135,414,463,398,190,173,243,362,398,463,133,243,173,262,428,369,32,140,208,396,369,428,171,208,140,457,274,461,237,241,44,354,461,274,125,44,241,316,403,317,86,87,179,402,317,403,178,179,87,315,404,316,85,86,180,403,316,404,179,180,86,314,405,315,84,85,181,404,315,405,180,181,85,313,406,314,83,84,182,405,314,406,181,182,84,418,406,421,194,201,182,313,421,406,83,182,201,366,401,323,137,93,177,361,323,401,132,177,93,408,407,306,184,76,183,292,306,407,62,183,76,408,306,409,184,185,76,291,409,306,61,76,185,410,409,287,186,57,185,291,287,409,61,185,57,436,410,432,216,212,186,287,432,410,57,186,212,434,416,427,214,207,192,411,427,416,187,192,207,264,368,372,34,143,139,383,372,368,156,139,143,457,459,438,237,218,239,309,438,459,79,239,218,352,376,366,123,137,147,401,366,376,177,147,137,4,1,275,4,45,1,274,275,1,44,1,45,428,262,421,208,201,32,418,421,262,194,32,201,327,358,294,98,64,129,331,294,358,102,129,64,367,435,416,138,192,215,433,416,435,213,215,192,455,439,289,235,59,219,392,289,439,166,219,59,328,462,326,99,97,242,370,326,462,141,242,97,326,370,2,97,2,141,94,2,370,94,141,2,460,455,305,240,75,235,289,305,455,59,235,75,448,339,449,228,229,110,254,449,339,24,110,229,261,446,255,31,25,226,359,255,446,130,226,25,449,254,450,229,230,24,253,450,254,23,24,230,450,253,451,230,231,23,252,451,253,22,23,231,451,252,452,231,232,22,256,452,252,26,22,232,256,341,452,26,232,112,453,452,341,233,112,232,413,464,414,189,190,244,463,414,464,243,244,190,441,413,286,221,56,189,414,286,413,190,189,56,441,286,442,221,222,56,258,442,286,28,56,222,442,258,443,222,223,28,257,443,258,27,28,223,444,443,259,224,29,223,257,259,443,27,223,29,259,260,444,29,224,30,445,444,260,225,30,224,260,467,445,30,225,247,342,445,467,113,247,225,250,309,458,20,238,79,459,458,309,239,79,238,290,305,392,60,166,75,289,392,305,59,75,166,460,305,328,240,99,75,290,328,305,60,75,99,376,433,401,147,177,213,435,401,433,215,213,177,250,290,309,20,79,60,392,309,290,166,60,79,411,416,376,187,147,192,433,376,416,213,192,147,341,463,453,112,233,243,464,453,463,244,243,233,453,464,357,233,128,244,465,357,464,245,244,128,412,343,465,188,245,114,357,465,343,128,114,245,437,343,399,217,174,114,412,399,343,188,114,174,363,440,360,134,131,220,344,360,440,115,220,131,456,420,399,236,174,198,437,399,420,217,198,174,456,363,420,236,198,134,360,420,363,131,134,198,361,401,288,132,58,177,435,288,401,215,177,58,353,265,383,124,156,35,372,383,265,143,35,156,255,249,339,25,110,7,390,339,249,163,7,110,261,255,448,31,228,25,339,448,255,110,25,228];
+  const FACE_MOUTH_TRIANGLES = [308,415,324,78,95,191,14,317,13,14,13,87,312,13,317,82,87,13,317,402,312,87,82,178,311,312,402,81,178,82,402,318,311,178,81,88,310,311,318,80,88,81,318,324,310,88,80,95,415,310,324,191,95,80];
+  const NL = String.fromCharCode(10);
+
+  // ── Tuning: adjust these on real devices ─────────────────────────────
+  const TUNING = {
+    smoothMinCutoff: 2.5,       // One Euro: lower = steadier when still (more lag)
+    smoothBeta: 25,             // One Euro: higher = less lag when moving
+    smoothDCutoff: 1.0,
+    maskSize: 1024,             // UV mask texture size
+    lipFeatherPx: 3,            // UV-space blur radii (≈ screen px at a normal distance)
+    lipEdgePx: 2,               // outer lip line: crisp like a real lipstick edge
+    innerFadePx: 6,             // coverage fades over this width toward the inner (wet) lip line
+    innerFadeStrength: 0.3,     // coverage lost right at the inner line
+    cornerFadeSize: 0.12,       // mouth-corner fade radius as a share of the mouth width
+    cornerFadeStrength: 0.35,   // coverage lost right at the corners (the bullet barely reaches them)
+    layersPerIntensity: 3,      // intensity slider → number of swipes (0.35 ≈ 1, 0.85 ≈ 2.5)
+    lipBandPx: 5,               // edge band around the lips where color decides lip vs. skin (8 bled onto shaded skin, 10-23)
+    refineMinContrast: 0.02,    // lip-vs-skin redness gap below which edge refinement is off
+    grainMax: 0.2,              // cap on the measured relative camera grain
+    blurMax: 4,                 // cap on the measured camera blur (px): sets grain size and mask edge softness
+    lipGlint: 1.5,              // glints on lip ridges (absolute), scaled by (1 - roughness)²
+    glintThreshold: 0.04,       // fine detail below this share of the lip mean (camera noise) never glints
+    diffuseCap: 1.3,            // camera brightness above this × lip mean counts as highlight, not color
+    specFill: 0.7,              // floor on light-dir mix so PBR sheen never fully turns off
+    creaseGain: 1.0,            // scale on material detail (how much of the camera's wrinkle contrast stays)
+    paperWhite: 0.85,           // reflectance of the swatch paper: tint transmittance² = product color / this
+    ratioMax: 4.0,              // cap on layered/bare reflectance per channel (bright paint on dark lips)
+    lipValue: [0.76, 1.16],     // product-layer lightness: upper lip → lower-lip centre (flat selfies only)
+    lipChroma: [1.28, 0.88],    // product-layer chroma: upper lip → lower-lip centre (flat selfies only)
+    gradeFlatRange: 0.15,       // grading fades out as the camera's own upper/lower lip contrast reaches this
+    lumGainMax: 1.15,           // estimated chip hex may not make the lip brighter than bare × this
+    bandGrow: 0.4,              // max paint grown into the skin band by the redness test (0.7 left a red ring, open mouth 10-23)
+    creaseCover: 0.15,          // matte pigment collects in creases (+), gloss thins on ridges (−)
+    edgeSize: 256,              // UV texture that accumulates the lip-vs-skin edge decision (512 cost fps on device)
+    edgeSmoothing: 0.35,        // per-frame weight of the new edge decision (lower = steadier, slower)
+    mouthClosedGap: 0.06,
+    lipRayOutlier: 0.2,
+    hlLocal: 1.15,              // camera highlight must exceed the local 3px mean by this (a peak, not a lit area)
+    hlSat: [0.3, 0.55],
+    opaqueShadeGamma: 0.6,     // brightness swing kept under fully opaque paint (1 = all, 0 = flat sticker)         // ...and be desaturated: lip color saturation ~0.6, specular ~0.2
+    lipShape: true,             // A2: paint inside the camera-measured outline (60 rays), not the average curve
+    lipShapeT: [0.6, 1.25],     // measured edge limits, share of the inner → landmark-outer distance
+    lipShapeMinTrusted: 0.4,    // below this share of trusted rays the landmark outline is used as is
+    lipShapeMaxPx: 256,         // a lip-edge ray this far (share of lip) from its neighbours' median is skipped       // inner-lip gap / mouth width below which the mouth hole is painted
+    lipSpecMax: 0.18,           // cap on the added clear-coat highlight (tinted, lower-centre only)
+    lipSheen: 0.25,             // broad clear-coat sheen × (1 - roughness)²; coarse mesh normals miss the narrow peak
+    hlKeep: [0.15, 1.3],        // camera highlight kept under the paint: matte → glossy (by 1 - roughness)
+    blushFeatherPx: 28,
+    shadowFeatherPx: 10,
+    blushSize: [0.17, 0.11],    // ellipse radii relative to the UV face width
+    shadowCrease: 0.6,          // how far toward the brow the shadow reaches (0..1)
+    blushCoverage: 0.6,         // coverage = intensity × this
+    shadowCoverage: 0.8,
+    skinRefLum: 0.34,           // assumed skin reflectance (linear Y) for exposure scaling
+    exposureRange: [0.2, 1.6],
+    specMax: 0.85,
+    flakeDensity: 0.985,        // share of UV cells without a shimmer flake
+    shimmerFlake: 0.9,
+    lightEveryMs: 500,
+    segmentEveryMs: 2000,       // background segmentation (light color) is heavier: run less often
+    segmentMinFps: 20,          // and skip it while the frame rate is low
+    lightSmoothing: 0.35,
+    lightColorClamp: [0.75, 1.3],
+    bgMinFraction: 0.15,        // Gray World needs this share of background pixels
+    bgMaxChroma: 1.6,           // max/min channel ratio above which the background is "one color"
+    clipLin: 0.92,              // linear value treated as blown out
+    darkLum: 0.02,
+    lightConfR2: [0.1, 0.4],    // R² of the normal→brightness fit mapped to confidence 0..1
+  };
+  // roughness/specular/flake: PBR_DEMO_SPEC 5 starting values, then detail/specular nudged
+  // toward finish medians in research/data/reference/lip_texture/lip_texture.sqlite (Pexels/Unsplash
+  // direction of change vs. bare lips — not a1 or colour ground truth; 6-15 still owns measured a1).
+  // a1: share of the lip covered by one swipe; translucent: 0 = paint over, 1 = tint like a filter;
+  // detail: how much of the camera's wrinkle contrast stays under the paint (1 = all of it).
+  // Lip shading itself is never a material value: it is the real camera shading (layering, 6-5-3).
+  const MATERIALS = {
+    matte:   { roughness: 0.90, specular: 0.35, flake: 0, a1: 0.72, translucent: 0.0, detail: 1.15 },
+    velvet:  { roughness: 0.75, specular: 0.45, flake: 0, a1: 0.66, translucent: 0.0, detail: 1.10 },
+    cream:   { roughness: 0.55, specular: 0.60, flake: 0, a1: 0.58, translucent: 0.12, detail: 1.05 },
+    satin:   { roughness: 0.42, specular: 0.85, flake: 0, a1: 0.50, translucent: 0.12, detail: 1.15 },
+    sheer:   { roughness: 0.32, specular: 0.90, flake: 0, a1: 0.38, translucent: 0.8, detail: 1.05 },
+    glossy:  { roughness: 0.16, specular: 1.15, flake: 0, a1: 0.46, translucent: 0.28, detail: 0.95 },
+    shimmer: { roughness: 0.38, specular: 0.90, flake: 1, a1: 0.55, translucent: 0.12, detail: 1.10 },
+  };
+  function lipCoverage(zone, mat) {
+    const layers = Math.max(0.3, clamp01(zone.intensity) * TUNING.layersPerIntensity);
+    return 1 - Math.pow(1 - mat.a1, layers);
+  }
+
+  const LIPS_OUTER = [61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146];
+  const LIPS_INNER = [78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,88,95];
+  const EYES = [
+    { lid: [33,246,161,160,159,158,157,173,133], brow: [46,53,52,65,55],
+      contour: [33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246] },
+    { lid: [263,466,388,387,386,385,384,398,362], brow: [276,283,282,295,285],
+      contour: [263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466] },
+  ];
+  const BROWS = [70,63,105,66,107,55,65,52,53,46,300,293,334,296,336,285,295,282,283,276];
+  const CHEEKS = [
+    { inner: 50, outer: 116, low: 205 },
+    { inner: 280, outer: 345, low: 425 },
+  ];
+  const FACE_EDGES = [234, 454];
+  const N_MESH = 468;
+  const N_LANDMARKS = 478;
+
+  const video = document.getElementById('video');
+  const glCanvas = document.getElementById('canvas');
+  const hud = document.getElementById('hud');
+  const overlay = document.getElementById('overlay');
+  const overlayCtx = overlay.getContext('2d');
+
+  let makeup = { lip: null, blush: null, eyeshadow: null };
+  let compare = false;
+  let landmarker = null;
+  let landmarkerDelegate = '-';
+  let segmenter = null;
+  let lastVideoTime = -1;
+  let lastFaceAt = 0;
+  let hasFace = false;
+  let status = null;
+  let renderer = null;
+
+  // ── Messaging ────────────────────────────────────────────────────────
+  function post(message) {
+    const text = JSON.stringify(message);
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(text);
+    else if (window.parent !== window) window.parent.postMessage(text, '*');
+  }
+  function setStatus(next, detail) {
+    if (status === next) return;
+    status = next;
+    post({ type: 'status', status: next, detail });
+  }
+  function handleMessage(raw) {
+    let msg;
+    try { msg = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return; }
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'makeup' && msg.makeup) makeup = msg.makeup;
+    if (msg.type === 'compare') compare = !!msg.value;
+  }
+  window.__kb = { receive: handleMessage };
+  window.addEventListener('message', (e) => handleMessage(e.data));
+  document.addEventListener('message', (e) => handleMessage(e.data));
+
+  // ── Color helpers (sRGB EOTF, AR_SPEC 6-5) ───────────────────────────
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function clamp01(v) { return clamp(Number(v) || 0, 0, 1); }
+  function toLin(c) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+  function hexToLinear(hex) {
+    const h = String(hex || '').replace('#', '');
+    const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16) || 0;
+    return [toLin(((n >> 16) & 255) / 255), toLin(((n >> 8) & 255) / 255), toLin((n & 255) / 255)];
+  }
+  function lumOf(r, g, b) { return 0.2126 * r + 0.7152 * g + 0.0722 * b; }
+
+  // ── One Euro filter over all landmarks (no per-frame allocation) ─────
+  const sx = new Float32Array(N_LANDMARKS);
+  const sy = new Float32Array(N_LANDMARKS);
+  const sz = new Float32Array(N_LANDMARKS);
+  const dvx = new Float32Array(N_LANDMARKS);
+  const dvy = new Float32Array(N_LANDMARKS);
+  let filterReady = false;
+  let filterT = 0;
+  function euroAlpha(cutoff, dt) { const tau = 1 / (2 * Math.PI * cutoff); return 1 / (1 + tau / dt); }
+  function filterLandmarks(face, t) {
+    const n = Math.min(N_LANDMARKS, face.length);
+    if (!filterReady || t - filterT > 0.5) {
+      for (let i = 0; i < n; i++) { sx[i] = face[i].x; sy[i] = face[i].y; sz[i] = face[i].z || 0; dvx[i] = 0; dvy[i] = 0; }
+      filterReady = true; filterT = t;
+      return;
+    }
+    const dt = Math.max(0.001, t - filterT);
+    filterT = t;
+    const ad = euroAlpha(TUNING.smoothDCutoff, dt);
+    for (let i = 0; i < n; i++) {
+      const x = face[i].x, y = face[i].y;
+      dvx[i] += ad * ((x - sx[i]) / dt - dvx[i]);
+      dvy[i] += ad * ((y - sy[i]) / dt - dvy[i]);
+      const speed = Math.sqrt(dvx[i] * dvx[i] + dvy[i] * dvy[i]);
+      const a = euroAlpha(TUNING.smoothMinCutoff + TUNING.smoothBeta * speed, dt);
+      sx[i] += a * (x - sx[i]);
+      sy[i] += a * (y - sy[i]);
+      sz[i] += a * ((face[i].z || 0) - sz[i]);
+    }
+  }
+
+  // ── UV masks: painted once (R = lips, G = blush, B = eyeshadow) ──────
+  function lerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+  function dist(a, b) { return Math.hypot(b[0] - a[0], b[1] - a[1]); }
+  function centroid(list) {
+    let x = 0, y = 0;
+    for (const p of list) { x += p[0]; y += p[1]; }
+    return [x / list.length, y / list.length];
+  }
+  function splinePath(c, p) {
+    const n = p.length;
+    c.moveTo(p[0][0], p[0][1]);
+    for (let i = 0; i < n; i++) {
+      const p0 = p[(i - 1 + n) % n], p1 = p[i], p2 = p[(i + 1) % n], p3 = p[(i + 2) % n];
+      c.bezierCurveTo(
+        p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6,
+        p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6,
+        p2[0], p2[1]
+      );
+    }
+    c.closePath();
+  }
+  function boxBlur(src, S, r) {
+    if (r < 1) return src;
+    let a = src;
+    const b = new Float32Array(S * S);
+    const w = 2 * r + 1;
+    for (let pass = 0; pass < 2; pass++) {
+      for (let y = 0; y < S; y++) {
+        const row = y * S;
+        let acc = 0;
+        for (let x = -r; x <= r; x++) acc += a[row + clamp(x, 0, S - 1)];
+        for (let x = 0; x < S; x++) {
+          b[row + x] = acc / w;
+          acc += a[row + Math.min(S - 1, x + r + 1)] - a[row + Math.max(0, x - r)];
+        }
+      }
+      const c = pass === 0 ? new Float32Array(S * S) : a;
+      for (let x = 0; x < S; x++) {
+        let acc = 0;
+        for (let y = -r; y <= r; y++) acc += b[clamp(y, 0, S - 1) * S + x];
+        for (let y = 0; y < S; y++) {
+          c[y * S + x] = acc / w;
+          acc += b[Math.min(S - 1, y + r + 1) * S + x] - b[Math.max(0, y - r) * S + x];
+        }
+      }
+      a = c;
+    }
+    return a;
+  }
+  function paintMasks() {
+    const S = TUNING.maskSize;
+    const canvas = document.createElement('canvas');
+    canvas.width = S; canvas.height = S;
+    const c = canvas.getContext('2d', { willReadFrequently: true });
+    const U = (i) => [FACE_UV[2 * i] * S, FACE_UV[2 * i + 1] * S];
+    const pts = (list) => list.map(U);
+    function layer(draw, feather) {
+      c.globalCompositeOperation = 'source-over';
+      c.clearRect(0, 0, S, S);
+      draw();
+      const d = c.getImageData(0, 0, S, S).data;
+      const out = new Float32Array(S * S);
+      for (let i = 0; i < S * S; i++) out[i] = d[i * 4 + 3] / 255;
+      return boxBlur(out, S, Math.round(feather / 2));
+    }
+    const lipShape = layer(() => {
+      c.fillStyle = '#fff';
+      c.beginPath();
+      splinePath(c, pts(LIPS_OUTER));
+      c.fill();
+    }, TUNING.lipEdgePx);
+    const innerGlow = layer(() => {
+      c.fillStyle = '#fff';
+      c.strokeStyle = '#fff';
+      c.lineWidth = TUNING.innerFadePx;
+      c.lineJoin = 'round';
+      c.beginPath();
+      splinePath(c, pts(LIPS_INNER));
+      c.fill();
+      c.stroke();
+    }, TUNING.innerFadePx);
+    const cornerR = dist(U(61), U(291)) * TUNING.cornerFadeSize;
+    const cornerGlow = layer(() => {
+      for (const p of [U(61), U(291)]) {
+        const g = c.createRadialGradient(p[0], p[1], 0, p[0], p[1], cornerR);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        c.fillStyle = g;
+        c.beginPath(); c.arc(p[0], p[1], cornerR, 0, Math.PI * 2); c.fill();
+      }
+    }, 0);
+    const lip = new Float32Array(S * S);
+    const corner = new Float32Array(S * S);
+    for (let i = 0; i < S * S; i++) {
+      corner[i] = 1 - TUNING.cornerFadeStrength * cornerGlow[i];
+      lip[i] = lipShape[i] * (1 - TUNING.innerFadeStrength * innerGlow[i]) * corner[i];
+    }
+    const band = layer(() => {
+      c.fillStyle = '#fff';
+      c.strokeStyle = '#fff';
+      c.lineWidth = TUNING.lipBandPx * 2;
+      c.lineJoin = 'round';
+      c.beginPath();
+      splinePath(c, pts(LIPS_OUTER));
+      c.fill();
+      c.stroke();
+    }, TUNING.lipFeatherPx);
+    const faceW = dist(U(FACE_EDGES[0]), U(FACE_EDGES[1]));
+    const blush = layer(() => {
+      for (const cheek of CHEEKS) {
+        const inner = U(cheek.inner), outer = U(cheek.outer);
+        const center = lerp(lerp(inner, outer, 0.4), U(cheek.low), 0.25);
+        c.save();
+        c.translate(center[0], center[1]);
+        c.rotate(Math.atan2(outer[1] - inner[1], outer[0] - inner[0]));
+        c.scale(faceW * TUNING.blushSize[0], faceW * TUNING.blushSize[1]);
+        const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.4, 'rgba(255,255,255,0.75)');
+        g.addColorStop(0.75, 'rgba(255,255,255,0.3)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        c.fillStyle = g;
+        c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2); c.fill();
+        c.restore();
+      }
+    }, TUNING.blushFeatherPx);
+    const shadow = layer(() => {
+      for (const eye of EYES) {
+        const lid = pts(eye.lid);
+        const crease = eye.brow.map((bi, j) => {
+          const li = Math.round((j * (lid.length - 1)) / (eye.brow.length - 1));
+          return lerp(lid[li], U(bi), TUNING.shadowCrease);
+        });
+        const lidC = centroid(lid), creaseC = centroid(crease);
+        const g = c.createLinearGradient(lidC[0], lidC[1], creaseC[0], creaseC[1]);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.55, 'rgba(255,255,255,0.67)');
+        g.addColorStop(1, 'rgba(255,255,255,0.15)');
+        c.fillStyle = g;
+        c.beginPath(); splinePath(c, lid.concat(crease.slice().reverse())); c.fill();
+      }
+    }, TUNING.shadowFeatherPx);
+    const rgba = new Uint8Array(S * S * 4);
+    for (let i = 0; i < S * S; i++) {
+      rgba[i * 4] = Math.round(clamp01(lip[i]) * 255);
+      rgba[i * 4 + 1] = Math.round(clamp01(blush[i]) * 255);
+      rgba[i * 4 + 2] = Math.round(clamp01(shadow[i]) * 255);
+      // Edge refinement paints band × redness near the lip line, so the corner fade must reach the band too.
+      rgba[i * 4 + 3] = Math.round(clamp01(band[i] * corner[i]) * 255);
+    }
+    const at = (arr, i) => arr[clamp(Math.round(FACE_UV[2 * i + 1] * S), 0, S - 1) * S + clamp(Math.round(FACE_UV[2 * i] * S), 0, S - 1)];
+    const lipVerts = [], skinVerts = [];
+    const excluded = new Set(BROWS.concat(EYES[0].contour, EYES[1].contour));
+    for (let i = 0; i < N_MESH; i++) {
+      if (at(lip, i) > 0.6) lipVerts.push(i);
+      else if (at(lip, i) < 0.01 && at(shadow, i) < 0.01 && !excluded.has(i)) skinVerts.push(i);
+    }
+    return { size: S, rgba, lipVerts, skinVerts };
+  }
+
+  // ── Mesh (positions, normals) ────────────────────────────────────────
+  const meshPos = new Float32Array(N_MESH * 3);
+  const meshNrm = new Float32Array(N_MESH * 3);
+  const scr = new Float32Array(N_MESH * 3);
+  // Inner-lip gap (13–14) relative to mouth width (61–291), in landmark space.
+  function mouthClosed() {
+    const gap = Math.hypot(sx[13] - sx[14], sy[13] - sy[14]);
+    const width = Math.hypot(sx[61] - sx[291], sy[61] - sy[291]);
+    return width > 1e-4 && gap / width < TUNING.mouthClosedGap;
+  }
+  // ── Lip thickness: edge widths will follow this person's lips, never an average (6-5-3) ──
+  // Outer/inner lip point pairs at the left, centre and right of each lip.
+  const LIP_THICK_PAIRS = {
+    up: [[37, 82], [0, 13], [267, 312]],
+    low: [[84, 87], [17, 14], [314, 317]],
+  };
+  const lipThick = { up: 0, low: 0, upRatio: 0, lowRatio: 0, upBase: 0, lowBase: 0, uvScale: 0 };
+  function meanPairLen(pairs, fx, fy, fz) {
+    let s = 0;
+    for (const [a, b] of pairs) s += Math.hypot((sx[a] - sx[b]) * fx, (sy[a] - sy[b]) * fy, (sz[a] - sz[b]) * fz);
+    return s / pairs.length;
+  }
+  function uvPairLen(pairs) {
+    let s = 0;
+    for (const [a, b] of pairs) {
+      s += Math.hypot(FACE_UV[2 * a] - FACE_UV[2 * b], FACE_UV[2 * a + 1] - FACE_UV[2 * b + 1]) * TUNING.maskSize;
+    }
+    return s / pairs.length;
+  }
+  const UV_LIP_THICK = uvPairLen(LIP_THICK_PAIRS.up) + uvPairLen(LIP_THICK_PAIRS.low);
+  function measureLipThickness(W, H) {
+    // Screen px (what the edge width is compared with), and that over the 3D mouth width: distance-free,
+    // and head yaw does not change it (MediaPipe z is in the same scale as x). Thickness itself stays 2D:
+    // the inner lip points sit deeper than the outer ones, so a 3D length hides how thin the lips are.
+    lipThick.up = meanPairLen(LIP_THICK_PAIRS.up, W, H, 0);
+    lipThick.low = meanPairLen(LIP_THICK_PAIRS.low, W, H, 0);
+    const width3d = Math.max(1e-4, Math.hypot((sx[61] - sx[291]) * W, (sy[61] - sy[291]) * H, (sz[61] - sz[291]) * W));
+    lipThick.upRatio = lipThick.up / width3d;
+    lipThick.lowRatio = lipThick.low / width3d;
+    // Screen px per UV-mask px at the lips: how wide the baked edge feather and band really are.
+    lipThick.uvScale = (lipThick.up + lipThick.low) / Math.max(1e-4, UV_LIP_THICK);
+    // Baseline: closed mouth, roughly frontal (both corners at a similar depth). Smiling or opening
+    // stretches the lips thinner, so only this pose defines the person's own thickness. Memory only.
+    const frontal = Math.abs(sz[61] - sz[291]) * W < 0.15 * width3d;
+    if (mouthClosed() && frontal) {
+      const k = lipThick.upBase ? 0.1 : 1;
+      lipThick.upBase += k * (lipThick.upRatio - lipThick.upBase);
+      lipThick.lowBase += k * (lipThick.lowRatio - lipThick.lowBase);
+    }
+  }
+  // Where the real lip ends, from the camera: walk from each inner lip point out past its outer
+  // partner and find the last red-enough sample. 1.0 = the landmark outer line is on the real edge,
+  // < 1 = the landmarks sit outside the lip (paint spills onto skin). Corners skipped. Memory only.
+  // 60 rays: each outer/inner landmark segment j → j+1 (wrapping) split at 0, 1/3, 2/3, so the edge
+  // between the 20 model points comes from the camera, not from the average face's curve.
+  const LIP_RAYS = LIPS_OUTER.length * 3;
+  const lipEdge = { up: 1, low: 1, samples: 0, t: new Float32Array(LIP_RAYS).fill(1), conf: new Float32Array(LIP_RAYS) };
+  function rayEnds(r) {
+    const j = Math.floor(r / 3), f = (r % 3) / 3, j2 = (j + 1) % LIPS_OUTER.length;
+    const o1 = LIPS_OUTER[j], o2 = LIPS_OUTER[j2], n1 = LIPS_INNER[j], n2 = LIPS_INNER[j2];
+    return [sx[n1] + f * (sx[n2] - sx[n1]), sy[n1] + f * (sy[n2] - sy[n1]),
+            sx[o1] + f * (sx[o2] - sx[o1]), sy[o1] + f * (sy[o2] - sy[o1])];
+  }
+  const edgeCrop = document.createElement('canvas');
+  const edgeCropCtx = edgeCrop.getContext('2d', { willReadFrequently: true });
+  function measureLipEdge(W, H) {
+    if (light.lipRed - light.skinRed < TUNING.refineMinContrast) return;
+    let x0 = 1, y0 = 1, x1 = 0, y1 = 0;
+    for (const i of LIPS_OUTER) { x0 = Math.min(x0, sx[i]); x1 = Math.max(x1, sx[i]); y0 = Math.min(y0, sy[i]); y1 = Math.max(y1, sy[i]); }
+    const padY = 0.6 * (y1 - y0), padX = (padY * H) / W;
+    x0 = clamp(x0 - padX, 0, 1); x1 = clamp(x1 + padX, 0, 1); y0 = clamp(y0 - padY, 0, 1); y1 = clamp(y1 + padY, 0, 1);
+    const srcW = (x1 - x0) * W, srcH = (y1 - y0) * H;
+    if (srcW < 8 || srcH < 8) return;
+    const cw = Math.min(256, Math.round(srcW)), ch = Math.max(1, Math.round((cw * srcH) / srcW));
+    if (edgeCrop.width !== cw || edgeCrop.height !== ch) { edgeCrop.width = cw; edgeCrop.height = ch; }
+    edgeCropCtx.drawImage(window.__src || video, x0 * W, y0 * H, srcW, srcH, 0, 0, cw, ch);
+    const d = edgeCropCtx.getImageData(0, 0, cw, ch).data;
+    const redAt = (nx, ny) => {
+      const cx = Math.floor(((nx - x0) / (x1 - x0)) * cw), cy = Math.floor(((ny - y0) / (y1 - y0)) * ch);
+      let r = 0, g = 0, b = 0;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        const k = (clamp(cy + oy, 0, ch - 1) * cw + clamp(cx + ox, 0, cw - 1)) * 4;
+        r += toLin(d[k] / 255); g += toLin(d[k + 1] / 255); b += toLin(d[k + 2] / 255);
+      }
+      return (r - g) / (r + g + b + 1e-4);
+    };
+    const mid = light.skinRed + 0.5 * (light.lipRed - light.skinRed);
+    // One ray per LIP_RAYS entry: t = 0 inner line, 1 landmark outer line. Start past the wet inner
+    // lip, stop on a sustained drop below the lip/skin midpoint.
+    const found = new Float32Array(LIP_RAYS);
+    for (let r = 0; r < LIP_RAYS; r++) {
+      const ray = rayEnds(r);
+      const step = 1.45 / 40;
+      let last = -1, lastV = 0, edge = -1;
+      for (let s = 0; s <= 40; s++) {
+        const t = 0.15 + s * step;
+        const v = redAt(ray[0] + t * (ray[2] - ray[0]), ray[1] + t * (ray[3] - ray[1]));
+        if (v >= mid) { last = t; lastV = v; edge = -1; }
+        else if (last >= 0) {
+          // Sub-step: where the redness crosses the midpoint between the last lip and first skin sample.
+          if (edge < 0 && t - last < step * 1.5) edge = last + step * clamp((lastV - mid) / Math.max(1e-4, lastV - v), 0, 1);
+          if (t - last > 0.12) break;
+        }
+      }
+      found[r] = last > 0 ? (edge > 0 ? edge : last) : -1;
+    }
+    // Outliers: a ray far from the median of its 4 neighbours (glare, teeth, beard) is skipped this time.
+    const first = lipEdge.samples++ === 0;
+    const k = first ? 1 : TUNING.lightSmoothing;
+    for (let r = 0; r < LIP_RAYS; r++) {
+      const near = [-2, -1, 1, 2].map((d) => found[(r + d + LIP_RAYS) % LIP_RAYS]).filter((v) => v > 0).sort((p, q) => p - q);
+      const med = near.length ? near[near.length >> 1] : -1;
+      const ok = found[r] > 0 && (med < 0 || Math.abs(found[r] - med) < TUNING.lipRayOutlier);
+      if (ok) lipEdge.t[r] = first || lipEdge.conf[r] === 0 ? found[r] : lipEdge.t[r] + k * (found[r] - lipEdge.t[r]);
+      lipEdge.conf[r] += k * ((ok ? 1 : 0) - lipEdge.conf[r]);
+    }
+    // Summary per lip, corners excluded: upper = segments 1..8, lower = 11..18.
+    const pick = (a, b) => trimmedMean(Array.from({ length: (b - a + 1) * 3 }, (_, i) => a * 3 + i)
+      .filter((r) => lipEdge.conf[r] > 0.5).map((r) => lipEdge.t[r]));
+    const up = pick(1, 8), low = pick(11, 18);
+    if (up !== null) lipEdge.up = up;
+    if (low !== null) lipEdge.low = low;
+  }
+  // A2: this person's lip outline, redrawn every frame from the current landmarks and each ray's
+  // measured edge (untrusted rays keep the landmark line). R = measured outline, G = landmark
+  // outline, on an opaque black crop so both channels keep their anti-aliased coverage. The shader
+  // reads it in video coordinates (suv). Memory only.
+  const shapeCanvas = document.createElement('canvas');
+  const shapeCtx = shapeCanvas.getContext('2d');
+  const shapeRect = [0, 0, 1, 1];
+  let shapeTrusted = 0;
+  function drawLipShape(W, H) {
+    shapeTrusted = 0;
+    if (!TUNING.lipShape || !lipEdge.samples) return false;
+    for (let r = 0; r < LIP_RAYS; r++) if (lipEdge.conf[r] > 0.5) shapeTrusted++;
+    if (shapeTrusted < TUNING.lipShapeMinTrusted * LIP_RAYS) return false;
+    const meas = [], land = [];
+    let x0 = 1, y0 = 1, x1 = 0, y1 = 0;
+    for (let r = 0; r < LIP_RAYS; r++) {
+      const e = rayEnds(r);
+      const t = lipEdge.conf[r] > 0.5 ? clamp(lipEdge.t[r], TUNING.lipShapeT[0], TUNING.lipShapeT[1]) : 1;
+      meas.push([e[0] + t * (e[2] - e[0]), e[1] + t * (e[3] - e[1])]);
+      land.push([e[2], e[3]]);
+      for (const q of [meas[r], land[r]]) {
+        x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]);
+      }
+    }
+    const pad = 0.1 * (x1 - x0);
+    x0 -= pad; x1 += pad; y0 -= (pad * W) / H; y1 += (pad * W) / H;
+    const srcW = (x1 - x0) * W, srcH = (y1 - y0) * H;
+    if (srcW < 8 || srcH < 4) return false;
+    const cw = Math.min(TUNING.lipShapeMaxPx, Math.ceil(srcW)), ch = Math.max(4, Math.ceil((cw * srcH) / srcW));
+    if (shapeCanvas.width !== cw || shapeCanvas.height !== ch) { shapeCanvas.width = cw; shapeCanvas.height = ch; }
+    const fill = (pts, color) => {
+      shapeCtx.fillStyle = color;
+      shapeCtx.beginPath();
+      pts.forEach((q, i) => {
+        const px = ((q[0] - x0) / (x1 - x0)) * cw, py = ((q[1] - y0) / (y1 - y0)) * ch;
+        if (i) shapeCtx.lineTo(px, py); else shapeCtx.moveTo(px, py);
+      });
+      shapeCtx.closePath();
+      shapeCtx.fill();
+    };
+    shapeCtx.globalCompositeOperation = 'source-over';
+    shapeCtx.fillStyle = '#000';
+    shapeCtx.fillRect(0, 0, cw, ch);
+    shapeCtx.globalCompositeOperation = 'lighter';
+    fill(meas, '#f00');
+    fill(land, '#0f0');
+    shapeCtx.globalCompositeOperation = 'source-over';
+    shapeRect[0] = x0; shapeRect[1] = y0; shapeRect[2] = x1 - x0; shapeRect[3] = y1 - y0;
+    return true;
+  }
+  let edgeFresh = true;
+  function updateMesh(W, H) {
+    for (let i = 0; i < N_MESH; i++) {
+      // Clip space of the mirrored display; MediaPipe z: smaller = closer, so depth LESS keeps the near surface.
+      meshPos[i * 3] = 1 - 2 * sx[i];
+      meshPos[i * 3 + 1] = 1 - 2 * sy[i];
+      meshPos[i * 3 + 2] = clamp(sz[i], -0.99, 0.99);
+      // Shading frame: x right on the (mirrored) screen, y up, z toward the viewer, in pixels.
+      scr[i * 3] = -sx[i] * W;
+      scr[i * 3 + 1] = -sy[i] * H;
+      scr[i * 3 + 2] = -sz[i] * W;
+    }
+    meshNrm.fill(0);
+    for (let t = 0; t < FACE_TRIANGLES.length; t += 3) {
+      const a = FACE_TRIANGLES[t] * 3, b = FACE_TRIANGLES[t + 1] * 3, c = FACE_TRIANGLES[t + 2] * 3;
+      const ux = scr[b] - scr[a], uy = scr[b + 1] - scr[a + 1], uz = scr[b + 2] - scr[a + 2];
+      const vx = scr[c] - scr[a], vy = scr[c + 1] - scr[a + 1], vz = scr[c + 2] - scr[a + 2];
+      const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      for (const k of [a, b, c]) { meshNrm[k] += nx; meshNrm[k + 1] += ny; meshNrm[k + 2] += nz; }
+    }
+    let zSum = 0;
+    for (let i = 0; i < N_MESH; i++) zSum += meshNrm[i * 3 + 2];
+    const sign = zSum < 0 ? -1 : 1;
+    for (let i = 0; i < N_MESH; i++) {
+      const k = i * 3;
+      const len = Math.hypot(meshNrm[k], meshNrm[k + 1], meshNrm[k + 2]) || 1;
+      meshNrm[k] = (sign * meshNrm[k]) / len;
+      meshNrm[k + 1] = (sign * meshNrm[k + 1]) / len;
+      meshNrm[k + 2] = (sign * meshNrm[k + 2]) / len;
+    }
+  }
+
+  // ── Scene / light estimation every 0.5 s (AR_SPEC 6-6-1) ─────────────
+  const grainCanvas = document.createElement('canvas');
+  grainCanvas.width = 24; grainCanvas.height = 24;
+  const grainCtx = grainCanvas.getContext('2d', { willReadFrequently: true });
+  // Camera grain: std of the 3×3 high-pass of linear luminance on a cheek patch, relative to its mean.
+  // Camera blur: how far that noise spreads, from the lag-1 correlation of the residual from a 5×5 mean
+  // (≈ 0 for sharp per-pixel noise, about (w - 1) / w for noise smeared over w px by focus or compression).
+  function measureCamera(W, H) {
+    const cheek = meshNrm[50 * 3 + 2] >= meshNrm[280 * 3 + 2] ? 50 : 280;
+    const N = 24;
+    const x0 = clamp(Math.round(sx[cheek] * W) - N / 2, 0, W - N), y0 = clamp(Math.round(sy[cheek] * H) - N / 2, 0, H - N);
+    grainCtx.drawImage(window.__src || video, x0, y0, N, N, 0, 0, N, N);
+    const d = grainCtx.getImageData(0, 0, N, N).data;
+    const L = new Float32Array(N * N);
+    for (let i = 0; i < N * N; i++) L[i] = lumOf(toLin(d[i * 4] / 255), toLin(d[i * 4 + 1] / 255), toLin(d[i * 4 + 2] / 255));
+    let sum = 0, sq = 0, mean = 0, n = 0;
+    for (let y = 1; y < N - 1; y++) {
+      for (let x = 1; x < N - 1; x++) {
+        let m = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) m += L[(y + dy) * N + x + dx];
+        const hp = L[y * N + x] - m / 9;
+        sum += hp; sq += hp * hp; mean += L[y * N + x]; n++;
+      }
+    }
+    const sd = Math.sqrt(Math.max(0, sq / n - (sum / n) * (sum / n)));
+    const R = new Float32Array(N * N);
+    for (let y = 2; y < N - 2; y++) {
+      for (let x = 2; x < N - 2; x++) {
+        let m = 0;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) m += L[(y + dy) * N + x + dx];
+        R[y * N + x] = L[y * N + x] - m / 25;
+      }
+    }
+    let rr = 0, rl = 0;
+    for (let y = 2; y < N - 3; y++) {
+      for (let x = 2; x < N - 3; x++) {
+        const r = R[y * N + x];
+        rr += r * r;
+        rl += r * (R[y * N + x + 1] + R[(y + 1) * N + x]) / 2;
+      }
+    }
+    const rho = rr > 1e-12 ? clamp(rl / rr, 0, 0.95) : 0;
+    return {
+      grain: clamp(sd / Math.max(1e-3, mean / n), 0, TUNING.grainMax),
+      blur: clamp(1 / (1 - rho), 1, TUNING.blurMax),
+    };
+  }
+  const stats = document.createElement('canvas');
+  const statsCtx = stats.getContext('2d', { willReadFrequently: true });
+  const light = {
+    color: [1, 1, 1], colorConf: 0, dir: [0, 0.3, 0.95], strength: 1, dirConf: 0,
+    lipMeanLum: 0.12, skinMeanLum: TUNING.skinRefLum, bgFraction: 0, samples: 0,
+    lipRed: 0.2, skinRed: 0.2, grain: 0, blur: 1, lipColor: [0.12, 0.06, 0.06], lipUpLow: 1,
+  };
+  let masks = null;
+  let lastLightAt = 0;
+  let lastSegmentAt = -1e9;
+
+  function trimmedMean(values) {
+    if (!values.length) return null;
+    values.sort((p, q) => p - q);
+    const lo = Math.floor(values.length * 0.25), hi = Math.max(lo + 1, Math.ceil(values.length * 0.75));
+    let s = 0;
+    for (let i = lo; i < hi; i++) s += values[i];
+    return s / (hi - lo);
+  }
+  function solve4(A, b) {
+    const M = A.map((row, i) => row.concat([b[i]]));
+    for (let col = 0; col < 4; col++) {
+      let piv = col;
+      for (let r = col + 1; r < 4; r++) if (Math.abs(M[r][col]) > Math.abs(M[piv][col])) piv = r;
+      if (Math.abs(M[piv][col]) < 1e-9) return null;
+      const tmp = M[col]; M[col] = M[piv]; M[piv] = tmp;
+      for (let r = 0; r < 4; r++) {
+        if (r === col) continue;
+        const f = M[r][col] / M[col][col];
+        for (let k = col; k < 5; k++) M[r][k] -= f * M[col][k];
+      }
+    }
+    return M.map((row, i) => row[4] / row[i]);
+  }
+  function fitLight(samples) {
+    const A = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]], b = [0,0,0,0];
+    for (const s of samples) {
+      const f = [1, s[0], s[1], s[2]];
+      for (let i = 0; i < 4; i++) { b[i] += f[i] * s[3]; for (let j = 0; j < 4; j++) A[i][j] += f[i] * f[j]; }
+    }
+    return solve4(A, b);
+  }
+  function sampleScene(now, W, H) {
+    const sw = 128, sh = Math.max(1, Math.round((128 * H) / W));
+    if (stats.width !== sw || stats.height !== sh) { stats.width = sw; stats.height = sh; }
+    statsCtx.drawImage(window.__src || video, 0, 0, sw, sh);
+    const data = statsCtx.getImageData(0, 0, sw, sh).data;
+    const linAt = (nx, ny) => {
+      const x = clamp(Math.round(nx * sw), 0, sw - 1), y = clamp(Math.round(ny * sh), 0, sh - 1);
+      const k = (y * sw + x) * 4;
+      return [toLin(data[k] / 255), toLin(data[k + 1] / 255), toLin(data[k + 2] / 255)];
+    };
+    const lumAt = (nx, ny) => { const c = linAt(nx, ny); return lumOf(c[0], c[1], c[2]); };
+    // Same redness measure as the shader: (r - g) / (r + g + b) in linear RGB.
+    const redAt = (nx, ny) => { const c = linAt(nx, ny); return (c[0] - c[1]) / (c[0] + c[1] + c[2] + 1e-4); };
+    // First sample is taken as-is so the defaults never show (e.g. over-bright lip highlights at start).
+    const k = light.samples++ === 0 ? 1 : TUNING.lightSmoothing;
+
+    // Lip body samples: lerp outer→inner lip line, skip mouth corners (indices 0 and 10).
+    // Mesh vertices inside the lip mask can hit the open mouth or a highlight and flatten shading.
+    const lipBody = [];
+    for (let i = 0; i < LIPS_OUTER.length; i++) {
+      if (i === 0 || i === 10) continue;
+      const ox = sx[LIPS_OUTER[i]], oy = sy[LIPS_OUTER[i]];
+      const ix = sx[LIPS_INNER[i]], iy = sy[LIPS_INNER[i]];
+      for (const t of [1 / 3, 0.5, 2 / 3]) lipBody.push([ox + t * (ix - ox), oy + t * (iy - oy)]);
+    }
+    const lipLum = trimmedMean(lipBody.map((p) => lumAt(p[0], p[1])));
+    // Upper lip = outer/inner indices 1..9, lower = 11..19 (3 samples each, corners skipped).
+    const upperLum = trimmedMean(lipBody.slice(0, 27).map((p) => lumAt(p[0], p[1])));
+    const lowerLum = trimmedMean(lipBody.slice(27).map((p) => lumAt(p[0], p[1])));
+    if (upperLum && lowerLum) light.lipUpLow += k * (upperLum / lowerLum - light.lipUpLow);
+    const samples = [];
+    for (const i of masks.skinVerts) {
+      if (meshNrm[i * 3 + 2] < 0.35) continue;
+      samples.push([meshNrm[i * 3], meshNrm[i * 3 + 1], meshNrm[i * 3 + 2], lumAt(sx[i], sy[i])]);
+    }
+    const skinLum = trimmedMean(samples.map((s) => s[3]));
+    if (lipLum) light.lipMeanLum += k * (lipLum - light.lipMeanLum);
+    try {
+      const cam = measureCamera(W, H);
+      light.grain += k * (cam.grain - light.grain);
+      light.blur += k * (cam.blur - light.blur);
+    } catch (e) { /* grain and blur are best-effort */ }
+    // Bare-lip color as the camera sees it (linear RGB): the layer below the virtual lipstick.
+    const lipCols = lipBody.map((p) => linAt(p[0], p[1]));
+    const lipColor = [0, 1, 2].map((j) => trimmedMean(lipCols.map((c) => c[j])));
+    if (lipColor.every((v) => v !== null)) {
+      for (let j = 0; j < 3; j++) light.lipColor[j] += k * (lipColor[j] - light.lipColor[j]);
+    }
+    const lipRed = trimmedMean(lipBody.map((p) => redAt(p[0], p[1])));
+    const skinRed = trimmedMean(masks.skinVerts.filter((i) => meshNrm[i * 3 + 2] >= 0.35).map((i) => redAt(sx[i], sy[i])));
+    if (lipRed !== null) light.lipRed += k * (lipRed - light.lipRed);
+    if (skinRed !== null) light.skinRed += k * (skinRed - light.skinRed);
+    if (skinLum) light.skinMeanLum += k * (skinLum - light.skinMeanLum);
+
+    // Direction and strength only (skin color is not used): brightness ≈ a + b·n, refit without outliers.
+    if (samples.length >= 30) {
+      let fit = fitLight(samples);
+      if (fit) {
+        const resid = samples.map((s) => Math.abs(s[3] - (fit[0] + fit[1] * s[0] + fit[2] * s[1] + fit[3] * s[2])));
+        const cut = resid.slice().sort((p, q) => p - q)[Math.floor(resid.length * 0.8)];
+        const kept = samples.filter((_, i) => resid[i] <= cut);
+        fit = fitLight(kept) || fit;
+        let ssRes = 0, ssTot = 0;
+        const mean = kept.reduce((s, v) => s + v[3], 0) / kept.length;
+        for (const s of kept) {
+          const pred = fit[0] + fit[1] * s[0] + fit[2] * s[1] + fit[3] * s[2];
+          ssRes += (s[3] - pred) * (s[3] - pred);
+          ssTot += (s[3] - mean) * (s[3] - mean);
+        }
+        const r2 = ssTot > 1e-9 ? 1 - ssRes / ssTot : 0;
+        let dx = fit[1], dy = fit[2], dz = Math.max(fit[3], 0);
+        const mag = Math.hypot(dx, dy, dz);
+        if (mag > 1e-6) {
+          dx /= mag; dy /= mag; dz /= mag;
+          if (dz < 0.15) { dz = 0.15; const m2 = Math.hypot(dx, dy, dz); dx /= m2; dy /= m2; dz /= m2; }
+          light.dir = [0, 1, 2].map((j) => light.dir[j] + k * ([dx, dy, dz][j] - light.dir[j]));
+          const dl = Math.hypot(light.dir[0], light.dir[1], light.dir[2]) || 1;
+          light.dir = light.dir.map((v) => v / dl);
+        }
+        const conf = clamp((r2 - TUNING.lightConfR2[0]) / (TUNING.lightConfR2[1] - TUNING.lightConfR2[0]), 0, 1);
+        light.dirConf += k * (conf - light.dirConf);
+        const strength = clamp((fit[0] + mag) / TUNING.skinRefLum, 0.3, 1.5);
+        light.strength += k * (strength - light.strength);
+      }
+    }
+
+    // Color: Gray World over background pixels (segmenter class 0), blown-out and dark pixels excluded.
+    if (segmenter && now - lastSegmentAt > TUNING.segmentEveryMs && (lastSegmentAt < 0 || fps >= TUNING.segmentMinFps)) {
+      lastSegmentAt = now;
+      try {
+        segmenter.segmentForVideo(video, now, (result) => {
+          const mask = result.categoryMask;
+          if (!mask) return;
+          const mw = mask.width, mh = mask.height, cat = mask.getAsUint8Array();
+          let r = 0, g = 0, bl = 0, n = 0;
+          for (let y = 0; y < sh; y++) {
+            for (let x = 0; x < sw; x++) {
+              if (cat[Math.floor((y * mh) / sh) * mw + Math.floor((x * mw) / sw)] !== 0) continue;
+              const q = (y * sw + x) * 4;
+              const R = toLin(data[q] / 255), G = toLin(data[q + 1] / 255), B = toLin(data[q + 2] / 255);
+              if (Math.max(R, G, B) > TUNING.clipLin || lumOf(R, G, B) < TUNING.darkLum) continue;
+              r += R; g += G; bl += B; n++;
+            }
+          }
+          light.bgFraction = n / (sw * sh);
+          const Y = lumOf(r, g, bl);
+          if (n > 0 && Y > 0) {
+            const lo = TUNING.lightColorClamp[0], hi = TUNING.lightColorClamp[1];
+            const c = [clamp(r / Y, lo, hi), clamp(g / Y, lo, hi), clamp(bl / Y, lo, hi)];
+            const cy = lumOf(c[0], c[1], c[2]);
+            for (let j = 0; j < 3; j++) light.color[j] += k * (c[j] / cy - light.color[j]);
+            const chroma = Math.max(r, g, bl) / Math.max(1e-6, Math.min(r, g, bl));
+            const ok = light.bgFraction >= TUNING.bgMinFraction && chroma <= TUNING.bgMaxChroma ? 1 : 0;
+            light.colorConf += k * (ok - light.colorConf);
+          }
+        });
+      } catch (e) { /* segmentation is best-effort */ }
+    }
+  }
+
+  // ── WebGL renderer ───────────────────────────────────────────────────
+  const PRECISION = [
+    '#ifdef GL_FRAGMENT_PRECISION_HIGH',
+    'precision highp float;',
+    '#else',
+    'precision mediump float;',
+    '#endif',
+  ].join(NL);
+
+  const BG_VERT = [
+    'attribute vec2 aPos;',
+    'varying vec2 vUv;',
+    'void main() { vUv = vec2(0.5 - aPos.x * 0.5, 0.5 - aPos.y * 0.5); gl_Position = vec4(aPos, 0.0, 1.0); }',
+  ].join(NL);
+  const BG_FRAG = [
+    PRECISION,
+    'varying vec2 vUv;',
+    'uniform sampler2D uVideo;',
+    'void main() { gl_FragColor = vec4(texture2D(uVideo, vUv).rgb, 1.0); }',
+  ].join(NL);
+
+  // Edge pass: draw the face mesh into its own UV space and blend this frame's lip-vs-skin decision
+  // (redness over a 9-point neighbourhood) into the previous frame's. Stored in UV, the decision
+  // follows the face when the head moves, so the lip line stops flickering and jagging (device 10-23).
+  const EDGE_VERT = [
+    'attribute vec3 aPos; attribute vec2 aUv;',
+    'varying vec2 vUv; varying vec2 vScreen;',
+    'void main() { vUv = aUv; vScreen = vec2(0.5 - aPos.x * 0.5, 0.5 - aPos.y * 0.5); gl_Position = vec4(aUv * 2.0 - 1.0, 0.0, 1.0); }',
+  ].join(NL);
+  const EDGE_FRAG = [
+    PRECISION,
+    'varying vec2 vUv; varying vec2 vScreen;',
+    'uniform sampler2D uVideo; uniform sampler2D uPrev; uniform vec2 uTexel;',
+    'uniform float uLipRed; uniform float uSkinRed; uniform float uAlpha;',
+    'vec3 toLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }',
+    'vec3 at(vec2 d) { return toLin(texture2D(uVideo, vScreen + d * uTexel).rgb); }',
+    'void main() {',
+    '  vec3 c = at(vec2(0.0)) + at(vec2(1.5, 0.0)) + at(vec2(-1.5, 0.0)) + at(vec2(0.0, 1.5)) + at(vec2(0.0, -1.5))',
+    '    + at(vec2(3.0, 3.0)) + at(vec2(-3.0, -3.0)) + at(vec2(3.0, -3.0)) + at(vec2(-3.0, 3.0));',
+    '  float red = (c.r - c.g) / (c.r + c.g + c.b + 1e-4);',
+    '  float t = smoothstep(mix(uSkinRed, uLipRed, 0.4), mix(uSkinRed, uLipRed, 0.85), red);',
+    '  gl_FragColor = vec4(mix(texture2D(uPrev, vUv).r, t, uAlpha), 0.0, 0.0, 1.0);',
+    '}',
+  ].join(NL);
+
+  const MESH_VERT = [
+    'attribute vec3 aPos; attribute vec2 aUv; attribute vec3 aNormal;',
+    'varying vec2 vUv; varying vec3 vNormal;',
+    'void main() { vUv = aUv; vNormal = aNormal; gl_Position = vec4(aPos, 1.0); }',
+  ].join(NL);
+  const MESH_FRAG = [
+    PRECISION,
+    'varying vec2 vUv; varying vec3 vNormal;',
+    'uniform sampler2D uVideo; uniform sampler2D uMask; uniform vec2 uViewport;',
+    'uniform vec3 uLightColor; uniform vec3 uLightDir; uniform float uLightStrength; uniform float uLightConf; uniform float uExposure;',
+    'uniform float uLipMeanLum; uniform float uSkinMeanLum;',
+    'uniform vec3 uLipAlbedo; uniform float uLipCov; uniform float uLipRough; uniform float uLipSpec; uniform float uLipFlake; uniform float uLipOn;',
+    'uniform vec3 uBlushAlbedo; uniform float uBlushCov;',
+    'uniform vec3 uShadowAlbedo; uniform float uShadowCov; uniform float uShadowFlake;',
+    'uniform float uSpecMax; uniform float uFlakeDensity;',
+    'uniform vec2 uTexel; uniform float uLipRed; uniform float uSkinRed; uniform float uRefine;',
+    'uniform float uLipDetailGain; uniform float uLipGlint; uniform float uGlintThreshold;',
+    'uniform float uDiffuseCap; uniform float uSkinRef;',
+    'uniform float uSpecFill; uniform vec3 uLipColor; uniform float uPaperWhite; uniform float uRatioMax;',
+    'uniform float uLipSpecMax; uniform vec2 uHlKeep; uniform vec2 uLipValue; uniform vec2 uLipChroma;',
+    'uniform float uGradeAmt; uniform float uLumGainMax; uniform float uBandGrow; uniform float uCreaseCover;',
+    'uniform float uLipTranslucent; uniform float uMaskBias; uniform sampler2D uEdge; uniform float uLipSheen;',
+    'uniform sampler2D uShape; uniform vec4 uShapeRect; uniform float uShapeOn;',
+    'uniform float uHlLocal; uniform vec2 uHlSat; uniform float uOpaqueShadeGamma;',
+    'float redness(vec3 c) { return (c.r - c.g) / (c.r + c.g + c.b + 1e-4); }',
+    'vec3 toLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }',
+    'vec3 toSrgb(vec3 c) { c = clamp(c, 0.0, 1.0); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }',
+    'float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }',
+    'float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }',
+    // GGX (Trowbridge-Reitz) with Smith-Schlick geometry and Schlick Fresnel, F0 = 0.04.
+    'float ggx(vec3 n, vec3 l, vec3 v, float rough) {',
+    '  vec3 h = normalize(l + v);',
+    '  float nh = max(dot(n, h), 0.0); float nl = max(dot(n, l), 0.0); float nv = max(dot(n, v), 1e-3);',
+    // Clamp a2 and the denominator so mediump GPUs never underflow to 0 (D = inf → NaN pixels).
+    '  float a = rough * rough; float a2 = max(a * a, 1e-3);',
+    '  float d = nh * nh * (a2 - 1.0) + 1.0;',
+    '  float D = a2 / (3.14159 * max(d * d, 1e-4));',
+    '  float k = (rough + 1.0) * (rough + 1.0) / 8.0;',
+    '  float G = (nl / (nl * (1.0 - k) + k)) * (nv / (nv * (1.0 - k) + k));',
+    '  float F = 0.04 + 0.96 * pow(1.0 - max(dot(h, v), 0.0), 5.0);',
+    '  return D * G * F / (4.0 * nv);',
+    '}',
+    // Flakes are fixed to UV cells so they stay on the face when the head turns.
+    'float flake(vec2 uv, vec3 n, vec3 l, vec3 v) {',
+    '  vec2 cell = floor(uv * 700.0);',
+    '  if (hash(cell) < uFlakeDensity) return 0.0;',
+    '  vec3 jitter = vec3(hash(cell + 1.3), hash(cell + 7.1), hash(cell + 3.7)) - 0.5;',
+    '  vec3 fn = normalize(n + jitter * 0.9);',
+    '  return pow(max(dot(fn, normalize(l + v)), 0.0), 60.0);',
+    '}',
+    // Product albedo under the current light, shaded by the real camera brightness relative to the zone mean.
+    'vec3 layer(vec3 cam, vec3 albedo, float refLum, float shadeMax) {',
+    '  float shade = clamp(lum(cam) / max(refLum, 1e-3), 0.0, shadeMax);',
+    '  return albedo * uLightColor * shade * uExposure;',
+    '}',
+    'void main() {',
+    // Mip bias softens the mask edges as much as the camera image itself is blurred.
+    '  vec4 m = texture2D(uMask, vUv, uMaskBias);',
+    '  float blushA = m.g * uBlushCov; float shadowA = m.b * uShadowCov;',
+    '  float lipZone = m.a * uLipOn;',
+    '  if (lipZone + blushA + shadowA < 0.002) discard;',
+    '  vec2 suv = vec2(1.0 - gl_FragCoord.x / uViewport.x, 1.0 - gl_FragCoord.y / uViewport.y);',
+    '  vec3 cam = toLin(texture2D(uVideo, suv).rgb);',
+    '  vec3 n = normalize(vNormal); vec3 v = vec3(0.0, 0.0, 1.0); vec3 l = normalize(uLightDir);',
+    '  float lipM = 0.0;',
+    '  float lN = lum(cam);',
+    '  if (lipZone > 0.002) {',
+    // Neighbors: local mean brightness (lip volume vs. wrinkles) and a denoised color for the edge test.
+    '    vec2 o = uTexel * 1.5;',
+    '    vec3 c1 = toLin(texture2D(uVideo, suv + vec2(o.x, 0.0)).rgb);',
+    '    vec3 c2 = toLin(texture2D(uVideo, suv - vec2(o.x, 0.0)).rgb);',
+    '    vec3 c3 = toLin(texture2D(uVideo, suv + vec2(0.0, o.y)).rgb);',
+    '    vec3 c4 = toLin(texture2D(uVideo, suv - vec2(0.0, o.y)).rgb);',
+    '    lN = 0.25 * (lum(c1) + lum(c2) + lum(c3) + lum(c4));',
+    // Lip edge: inside the core follow the mesh; near the edge (and in the band just outside) the
+    // camera decides lip vs. skin by redness, so the color follows the real lip line.
+    '    lipM = m.r;',
+    '    if (uShapeOn > 0.5) {',
+    // A2: the camera-measured outline decides the outer edge. Inside the landmark lip keep the mask
+    // (inner and corner fades) and cut it where the real lip is smaller; outside it, grow into the
+    // band only where the measured lip is larger.
+    '      vec2 sp = (suv - uShapeRect.xy) / uShapeRect.zw;',
+    '      vec2 sh = (sp.x < 0.0 || sp.y < 0.0 || sp.x > 1.0 || sp.y > 1.0) ? vec2(0.0) : texture2D(uShape, sp).rg;',
+    '      lipM = max(m.r, m.a * (1.0 - sh.g)) * sh.r;',
+    '    } else if (uRefine > 0.0) {',
+    // Lip-vs-skin decision, averaged over frames in UV space by the edge pass.
+    '      float t = texture2D(uEdge, vUv).r;',
+    '      float edge = 1.0 - smoothstep(0.55, 0.95, m.r);',
+    // Grow into the band where the camera sees lip color; never drop a dim, pale (thin upper) lip:
+    // inside the mesh lip, color can thin the paint by half at most, with a soft (not knife) step.
+    '      lipM = max(m.r * mix(1.0, 0.5 + 0.5 * t, edge * uRefine), m.a * t * edge * uRefine * uBandGrow);',
+    '    }',
+    '  }',
+    '  if (lipM + blushA + shadowA < 0.002) discard;',
+    '  vec3 col = cam;',
+    '  if (shadowA > 0.002) {',
+    '    vec3 s = layer(cam, uShadowAlbedo, uSkinMeanLum, 1.6) + vec3(uShadowFlake * flake(vUv, n, l, v) * uLightStrength);',
+    '    col = mix(col, s, shadowA);',
+    '  }',
+    '  if (blushA > 0.002) col = mix(col, layer(cam, uBlushAlbedo, uSkinMeanLum, 1.6), blushA);',
+    '  if (lipM > 0.002) {',
+    '    float core = smoothstep(0.5, 0.95, lipM);',
+    '    float meanL = max(uLipMeanLum, 1e-3);',
+    '    float camL = max(lum(cam), 1e-4);',
+    '    float hpAbs = camL - lN;',
+    // Layering (AR_SPEC 6-5-3): camera = light × shading × bare-lip color. The lipstick only changes the
+    // lip color, so multiply the camera pixel by (layered / bare) reflectance. Wrinkles, upper-lip
+    // shade, lower-lip volume, light color, noise and blur all come from the real camera pixel.
+    '    vec3 rLip = max(uLipColor / max(uLightColor * uExposure, vec3(1e-3)), vec3(1e-3));',
+    // Per-pixel bare lip: the mean lip reflectance with this pixel's own chromaticity. A redder upper
+    // lip and a paler lower lip are both covered by the pigment, so the result is one lipstick color
+    // (shaded by the camera) instead of the bare-lip color difference multiplied up.
+    '    vec3 chromPx = cam / camL;',
+    '    vec3 chromLip = uLipColor / max(lum(uLipColor), 1e-4);',
+    '    vec3 rPx = max(rLip * clamp(chromPx / max(chromLip, vec3(1e-3)), 0.25, 4.0), vec3(1e-3));',
+    // Real lipstick sits unevenly: matte pigment collects in creases, gloss thins on ridges.
+    '    float wideL = 0.25 * (lum(toLin(texture2D(uVideo, suv + uTexel * 3.0).rgb)) + lum(toLin(texture2D(uVideo, suv - uTexel * 3.0).rgb))',
+    '      + lum(toLin(texture2D(uVideo, suv + vec2(uTexel.x, -uTexel.y) * 3.0).rgb)) + lum(toLin(texture2D(uVideo, suv + vec2(-uTexel.x, uTexel.y) * 3.0).rgb)));',
+    '    float creaseW = clamp((wideL - camL) / (0.15 * meanL), -1.0, 1.0);',
+    '    float smoothT = 1.0 - uLipRough;',
+    '    float uneven = 1.0 + uCreaseCover * (max(creaseW, 0.0) * (1.0 - smoothT) - max(-creaseW, 0.0) * smoothT);',
+    '    float cov = clamp(lipM * uLipCov * uneven, 0.0, 1.0);',
+    // Opaque pigment covers the lip; translucent (sheer, gloss) filters it like the dye on white paper.
+    '    vec3 paint = mix(rPx, uLipAlbedo, cov);',
+    '    vec3 tint = rPx * mix(vec3(1.0), clamp(uLipAlbedo / uPaperWhite, 0.0, 1.0), cov);',
+    '    vec3 mixCol = mix(paint, tint, uLipTranslucent);',
+    // Canonical UV: v grows toward the forehead, so the upper lip is the higher v. Hex is the
+    // mid-tone; lightness and chroma split so a flat selfie still has a lipstick gradient.
+    '    float along = clamp((vUv.y - 0.306) / 0.045, -1.0, 1.0);',
+    '    float across = clamp((vUv.x - 0.5) / 0.118, -1.0, 1.0);',
+    '    float lowerW = smoothstep(0.15, -0.55, along);',
+    '    float centerW = 1.0 - smoothstep(0.18, 0.95, abs(across));',
+    '    float place = clamp(lowerW * (0.55 + 0.45 * centerW), 0.0, 1.0);',
+    // Grading only fills in for a flat selfie: it fades out when the camera already has upper/lower contrast.
+    '    float value = mix(1.0, mix(uLipValue.x, uLipValue.y, place), uGradeAmt);',
+    '    float chroma = mix(1.0, mix(uLipChroma.x, uLipChroma.y, place), uGradeAmt);',
+    '    float pLum = max(lum(mixCol), 1e-4);',
+    '    vec3 chromaVec = mixCol - vec3(pLum);',
+    '    vec3 graded = max(vec3(pLum * value) + chromaVec * chroma, 0.0);',
+    '    vec3 ratio = clamp(graded / rPx, 0.0, uRatioMax);',
+    // Chip hex is an estimate and often brighter than the real bullet: never lift the lip past bare × cap.
+    '    float lumGain = dot(ratio * rPx, vec3(0.2126, 0.7152, 0.0722)) / max(lum(rPx), 1e-4);',
+    // Opaque pigment covers the lip, so a lighter shade may lighten it (B1, 10-25: the cap left a thin
+    // film over dark lips). Only see-through finishes keep the cap.
+    '    float gainCap = mix(uRatioMax, uLumGainMax, uLipTranslucent);',
+    '    ratio *= min(1.0, gainCap / max(lumGain, 1e-4));',
+    // Camera highlights are surface reflection, not lip color: take them out of the ratio, then keep
+    // them by texture (matte dulls them, gloss keeps them). With no paint (cov 0) the pixel is unchanged.
+    // Only real speculars: a peak above the local 3px mean AND above the lip mean, and desaturated.
+    // A broadly brighter (paler or lit) lower lip is diffuse shading, kept under the paint; it was
+    // being turned into a white film over the color (device 10-25).
+    '    float camSat = (max(cam.r, max(cam.g, cam.b)) - min(cam.r, min(cam.g, cam.b))) / max(max(cam.r, max(cam.g, cam.b)), 1e-4);',
+    '    float hl = min(max(camL - uDiffuseCap * meanL, 0.0), max(camL - uHlLocal * wideL, 0.0))',
+    '      * (1.0 - smoothstep(uHlSat.x, uHlSat.y, camSat)) * core;',
+    '    vec3 camDiffuse = cam * (1.0 - hl / camL);',
+    // Texture detail: matte fills creases a little (pulls toward the local mean), gloss keeps them.
+    '    float fill = 1.0 + (lN / camL - 1.0) * (1.0 - uLipDetailGain) * cov;',
+    '    vec3 layered = camDiffuse * ratio * clamp(fill, 0.6, 1.6);',
+    // Opaque pigment hides the bare lip's own light/dark patches; the camera mixes those with real
+    // shading, so under opaque paint the brightness swing is compressed (not removed): upper-lip
+    // shade, lower-lip volume and creases stay, a pale patch no longer glows through (10-25).
+    '    float shadeRel = clamp(lum(camDiffuse) / meanL, 0.15, 4.0);',
+    '    float opaqueW = cov * (1.0 - uLipTranslucent);',
+    '    layered *= pow(shadeRel, (uOpaqueShadeGamma - 1.0) * opaqueW);',
+    // A light shade on a bright spot must stay that shade, not clip to white: soft knee on the peak
+    // channel, whole color scaled (hue kept, light/dark order kept). Real speculars are added below.
+    '    float pk = max(layered.r, max(layered.g, layered.b));',
+    '    float pkSoft = pk < 0.7 ? pk : 0.7 + 0.3 * (1.0 - exp(-(pk - 0.7) / 0.3));',
+    '    layered *= pkSoft / max(pk, 1e-4);',
+    '    float smooth1 = smoothT;',
+    '    float keepHl = mix(1.0, mix(uHlKeep.x, uHlKeep.y, smooth1), cov);',
+    // Clear coat: GGX on the real mesh normal toward the estimated light, plus glints on lip ridges.
+    '    float glint = max(hpAbs - uGlintThreshold * meanL, 0.0) * uLipGlint * smooth1 * smooth1;',
+    '    float lightMix = max(uLightConf, uSpecFill);',
+    '    float specPbr = ggx(n, l, v, uLipRough) * max(dot(n, l), 0.0) * uLightStrength * uExposure * uSkinRef * lightMix;',
+    '    float peakMask = pow(max(dot(n, normalize(l + v)), 0.0), mix(28.0, 64.0, uLipRough)) * core;',
+    '    float sheen = pow(max(dot(n, normalize(l + v)), 0.0), mix(4.0, 10.0, smooth1)) * smooth1 * smooth1 * uLipSheen * lightMix * core;',
+    '    float spec = (min(specPbr * uLipSpec * peakMask, uLipSpecMax) + min(glint, 0.05) + sheen) * cov;',
+    '    vec3 specTint = mix(uLipAlbedo, vec3(1.0), 0.16);',
+    '    float fl = uLipFlake * flake(vUv, n, l, v) * uLightStrength * core;',
+    '    col += layered + vec3(hl * keepHl) - cam + specTint * spec + vec3(fl) * lipM;',
+    '  }',
+    '  gl_FragColor = vec4(toSrgb(col), 1.0);',
+    '}',
+  ].join(NL);
+
+  function createGLRenderer() {
+    const opts = { alpha: false, antialias: false, premultipliedAlpha: false, depth: true };
+    let gl = glCanvas.getContext('webgl2', opts);
+    const version = gl ? 'webgl2' : 'webgl';
+    if (!gl) gl = glCanvas.getContext('webgl', opts);
+    if (!gl) return null;
+    function shader(type, src) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
+      return s;
+    }
+    function program(vs, fs, uniforms) {
+      const p = gl.createProgram();
+      gl.attachShader(p, shader(gl.VERTEX_SHADER, vs));
+      gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
+      const u = {};
+      for (const n of uniforms) u[n] = gl.getUniformLocation(p, n);
+      return { p, u };
+    }
+    const bg = program(BG_VERT, BG_FRAG, ['uVideo']);
+    const mesh = program(MESH_VERT, MESH_FRAG, ['uVideo', 'uMask', 'uViewport', 'uLightColor', 'uLightDir',
+      'uLightStrength', 'uLightConf', 'uExposure', 'uLipMeanLum', 'uSkinMeanLum', 'uLipAlbedo', 'uLipCov',
+      'uLipRough', 'uLipSpec', 'uLipFlake', 'uLipOn', 'uBlushAlbedo', 'uBlushCov', 'uShadowAlbedo', 'uShadowCov',
+      'uShadowFlake', 'uSpecMax', 'uFlakeDensity', 'uTexel', 'uLipRed', 'uSkinRed', 'uRefine', 'uLipDetailGain',
+      'uLipGlint', 'uGlintThreshold', 'uDiffuseCap', 'uSkinRef',
+      'uLipTranslucent', 'uMaskBias',
+      'uSpecFill', 'uLipColor', 'uPaperWhite', 'uRatioMax', 'uLipSpecMax', 'uHlKeep',
+      'uLipValue', 'uLipChroma', 'uGradeAmt', 'uLumGainMax', 'uBandGrow', 'uCreaseCover', 'uEdge', 'uLipSheen',
+      'uShape', 'uShapeRect', 'uShapeOn', 'uHlLocal', 'uHlSat', 'uOpaqueShadeGamma']);
+    const edge = program(EDGE_VERT, EDGE_FRAG, ['uVideo', 'uPrev', 'uTexel', 'uLipRed', 'uSkinRed', 'uAlpha']);
+    const bgPos = gl.getAttribLocation(bg.p, 'aPos');
+    const aPos = gl.getAttribLocation(mesh.p, 'aPos');
+    const aUv = gl.getAttribLocation(mesh.p, 'aUv');
+    const aNormal = gl.getAttribLocation(mesh.p, 'aNormal');
+    const ePos = gl.getAttribLocation(edge.p, 'aPos');
+    const eUv = gl.getAttribLocation(edge.p, 'aUv');
+
+    function buffer(target, data, usage) {
+      const b = gl.createBuffer();
+      gl.bindBuffer(target, b);
+      gl.bufferData(target, data, usage);
+      return b;
+    }
+    const quadBuf = buffer(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const posBuf = buffer(gl.ARRAY_BUFFER, meshPos, gl.DYNAMIC_DRAW);
+    const nrmBuf = buffer(gl.ARRAY_BUFFER, meshNrm, gl.DYNAMIC_DRAW);
+    const uvBuf = buffer(gl.ARRAY_BUFFER, new Float32Array(FACE_UV), gl.STATIC_DRAW);
+    const idxBuf = buffer(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(FACE_TRIANGLES), gl.STATIC_DRAW);
+    const mouthBuf = buffer(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(FACE_MOUTH_TRIANGLES), gl.STATIC_DRAW);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+
+    const videoTex = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, videoTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    const maskTex = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, maskTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, masks.size, masks.size, 0, gl.RGBA, gl.UNSIGNED_BYTE, masks.rgba);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    // Measured lip outline crop (A2), refreshed every frame from shapeCanvas.
+    const shapeTex = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, shapeTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    // Two UV edge textures, ping-ponged: read last frame's, write this frame's.
+    const ES = TUNING.edgeSize;
+    const edgeTex = [0, 1].map(() => {
+      const t = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, ES, ES, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    });
+    const edgeFb = edgeTex.map((t) => {
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      return fb;
+    });
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    let edgeCur = 0;
+
+    let lost = false;
+    glCanvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
+
+    function attrib(loc, buf, size) {
+      if (loc < 0) return;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+    }
+    function disableAll() {
+      for (const loc of [bgPos, aPos, aUv, aNormal, ePos, eUv]) if (loc >= 0) gl.disableVertexAttribArray(loc);
+    }
+    function material(zone) {
+      return MATERIALS[zone && zone.texture] || MATERIALS.matte;
+    }
+
+    return {
+      name: version,
+      get lost() { return lost; },
+      // Snapshot the current camera frame before detection, so image and landmarks are the same frame.
+      upload() {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, videoTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, window.__src || video);
+      },
+      render(W, H) {
+        if (glCanvas.width !== W || glCanvas.height !== H) { glCanvas.width = W; glCanvas.height = H; }
+        gl.viewport(0, 0, W, H);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, videoTex);
+
+        // 1. Camera image (mirrored).
+        disableAll();
+        gl.disable(gl.DEPTH_TEST);
+        gl.useProgram(bg.p);
+        gl.uniform1i(bg.u.uVideo, 0);
+        attrib(bgPos, quadBuf, 2);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+        const lip = makeup.lip, blush = makeup.blush, eye = makeup.eyeshadow;
+        if (!hasFace || compare || !(lip || blush || eye)) return;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, meshPos);
+        gl.bindBuffer(gl.ARRAY_BUFFER, nrmBuf);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, meshNrm);
+
+        // 2. Edge pass (lips only): blend this frame's lip-vs-skin decision into the UV edge texture.
+        if (lip) {
+          const next = 1 - edgeCur;
+          gl.bindFramebuffer(gl.FRAMEBUFFER, edgeFb[next]);
+          gl.viewport(0, 0, ES, ES);
+          disableAll();
+          gl.useProgram(edge.p);
+          gl.activeTexture(gl.TEXTURE2);
+          gl.bindTexture(gl.TEXTURE_2D, edgeTex[edgeCur]);
+          gl.uniform1i(edge.u.uVideo, 0);
+          gl.uniform1i(edge.u.uPrev, 2);
+          gl.uniform2f(edge.u.uTexel, 1 / W, 1 / H);
+          gl.uniform1f(edge.u.uLipRed, light.lipRed);
+          gl.uniform1f(edge.u.uSkinRed, light.skinRed);
+          gl.uniform1f(edge.u.uAlpha, edgeFresh ? 1 : TUNING.edgeSmoothing);
+          attrib(ePos, posBuf, 3);
+          attrib(eUv, uvBuf, 2);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+          gl.drawElements(gl.TRIANGLES, FACE_TRIANGLES.length, gl.UNSIGNED_SHORT, 0);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, W, H);
+          edgeCur = next;
+          edgeFresh = false;
+        }
+
+        // 3. Face mesh with makeup; depth test keeps the near side when the head turns.
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LESS);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        disableAll();
+        gl.useProgram(mesh.p);
+        attrib(aPos, posBuf, 3);
+        attrib(aUv, uvBuf, 2);
+        attrib(aNormal, nrmBuf, 3);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, maskTex);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, edgeTex[edgeCur]);
+
+        const u = mesh.u;
+        gl.uniform1i(u.uEdge, 2);
+        const shapeOn = lip ? drawLipShape(W, H) : false;
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, shapeTex);
+        if (shapeOn) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, shapeCanvas);
+        gl.uniform1i(u.uShape, 3);
+        gl.uniform1f(u.uShapeOn, shapeOn ? 1 : 0);
+        gl.uniform1f(u.uHlLocal, TUNING.hlLocal);
+        gl.uniform2f(u.uHlSat, TUNING.hlSat[0], TUNING.hlSat[1]);
+        gl.uniform1f(u.uOpaqueShadeGamma, TUNING.opaqueShadeGamma);
+        gl.uniform4f(u.uShapeRect, shapeRect[0], shapeRect[1], shapeRect[2], shapeRect[3]);
+        const lipMat = material(lip), eyeMat = material(eye);
+        const lipAlb = lip ? hexToLinear(lip.hex) : [0, 0, 0];
+        const blushAlb = blush ? hexToLinear(blush.hex) : [0, 0, 0];
+        const eyeAlb = eye ? hexToLinear(eye.hex) : [0, 0, 0];
+        const exposure = clamp(light.skinMeanLum / TUNING.skinRefLum, TUNING.exposureRange[0], TUNING.exposureRange[1]);
+        gl.uniform1i(u.uVideo, 0);
+        gl.uniform1i(u.uMask, 1);
+        gl.uniform2f(u.uViewport, W, H);
+        gl.uniform3f(u.uLightColor, light.color[0], light.color[1], light.color[2]);
+        gl.uniform3f(u.uLightDir, light.dir[0], light.dir[1], light.dir[2]);
+        gl.uniform1f(u.uLightStrength, light.strength);
+        gl.uniform1f(u.uLightConf, light.dirConf);
+        gl.uniform1f(u.uExposure, exposure);
+        gl.uniform1f(u.uLipMeanLum, light.lipMeanLum);
+        gl.uniform1f(u.uSkinMeanLum, light.skinMeanLum);
+        gl.uniform3f(u.uLipAlbedo, lipAlb[0], lipAlb[1], lipAlb[2]);
+        gl.uniform1f(u.uLipCov, lip ? lipCoverage(lip, lipMat) : 0);
+        gl.uniform1f(u.uLipRough, lipMat.roughness);
+        gl.uniform1f(u.uLipSpec, lipMat.specular);
+        gl.uniform1f(u.uLipFlake, lip ? lipMat.flake * TUNING.shimmerFlake * clamp01(lip.intensity) : 0);
+        gl.uniform1f(u.uLipOn, lip ? 1 : 0);
+        gl.uniform3f(u.uBlushAlbedo, blushAlb[0], blushAlb[1], blushAlb[2]);
+        gl.uniform1f(u.uBlushCov, blush ? clamp01(blush.intensity) * TUNING.blushCoverage : 0);
+        gl.uniform3f(u.uShadowAlbedo, eyeAlb[0], eyeAlb[1], eyeAlb[2]);
+        gl.uniform1f(u.uShadowCov, eye ? clamp01(eye.intensity) * TUNING.shadowCoverage : 0);
+        gl.uniform1f(u.uShadowFlake, eye ? eyeMat.flake * TUNING.shimmerFlake * clamp01(eye.intensity) : 0);
+        gl.uniform1f(u.uSpecMax, TUNING.specMax);
+        gl.uniform1f(u.uFlakeDensity, TUNING.flakeDensity);
+        gl.uniform2f(u.uTexel, 1 / W, 1 / H);
+        gl.uniform1f(u.uLipRed, light.lipRed);
+        gl.uniform1f(u.uSkinRed, light.skinRed);
+        gl.uniform1f(u.uRefine, clamp((light.lipRed - light.skinRed - TUNING.refineMinContrast) / TUNING.refineMinContrast, 0, 1));
+        gl.uniform1f(u.uLipDetailGain, lipMat.detail * TUNING.creaseGain);
+        gl.uniform1f(u.uLipTranslucent, lipMat.translucent);
+        gl.uniform1f(u.uMaskBias, Math.log2(Math.max(1, light.blur)));
+        gl.uniform1f(u.uLipGlint, TUNING.lipGlint);
+        gl.uniform1f(u.uGlintThreshold, TUNING.glintThreshold);
+        gl.uniform1f(u.uDiffuseCap, TUNING.diffuseCap);
+        gl.uniform1f(u.uSkinRef, TUNING.skinRefLum);
+        gl.uniform1f(u.uSpecFill, TUNING.specFill);
+        gl.uniform3f(u.uLipColor, light.lipColor[0], light.lipColor[1], light.lipColor[2]);
+        gl.uniform1f(u.uPaperWhite, TUNING.paperWhite);
+        gl.uniform1f(u.uRatioMax, TUNING.ratioMax);
+        gl.uniform1f(u.uLipSpecMax, TUNING.lipSpecMax);
+        gl.uniform2f(u.uHlKeep, TUNING.hlKeep[0], TUNING.hlKeep[1]);
+        gl.uniform2f(u.uLipValue, TUNING.lipValue[0], TUNING.lipValue[1]);
+        gl.uniform2f(u.uLipChroma, TUNING.lipChroma[0], TUNING.lipChroma[1]);
+        gl.uniform1f(u.uGradeAmt, clamp(1 - Math.abs(1 - light.lipUpLow) / TUNING.gradeFlatRange, 0, 1));
+        gl.uniform1f(u.uLumGainMax, TUNING.lumGainMax);
+        gl.uniform1f(u.uBandGrow, TUNING.bandGrow);
+        gl.uniform1f(u.uCreaseCover, TUNING.creaseCover);
+        gl.uniform1f(u.uLipSheen, TUNING.lipSheen);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+        gl.drawElements(gl.TRIANGLES, FACE_TRIANGLES.length, gl.UNSIGNED_SHORT, 0);
+        // Closed lips: paint the thin mouth-hole gap too; open mouth keeps it a hole (teeth unpainted).
+        if (mouthClosed()) {
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mouthBuf);
+          gl.drawElements(gl.TRIANGLES, FACE_MOUTH_TRIANGLES.length, gl.UNSIGNED_SHORT, 0);
+        }
+      },
+    };
+  }
+
+  // ── Debug HUD (double-tap) ───────────────────────────────────────────
+  let hudOn = false;
+  let lastTap = 0;
+  let fps = 0, fpsFrames = 0, fpsAt = 0;
+  let wbLocked = false, colorTempK = null;
+  function toggleHud() {
+    hudOn = !hudOn;
+    hud.style.display = hudOn ? 'block' : 'none';
+    if (!hudOn) overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+  }
+  // HUD only: landmark outer lip line (white) and camera-measured lip edge (green = trusted,
+  // red = not found / outlier). Same size and mirroring as the WebGL canvas, so dots sit on the video.
+  function drawLipPoints(W, H) {
+    if (overlay.width !== W || overlay.height !== H) { overlay.width = W; overlay.height = H; }
+    overlayCtx.clearRect(0, 0, W, H);
+    if (!hasFace) return;
+    const r = Math.max(1.5, W / 400);
+    const dot = (x, y, color) => {
+      overlayCtx.fillStyle = color;
+      overlayCtx.beginPath(); overlayCtx.arc((1 - x) * W, y * H, r, 0, Math.PI * 2); overlayCtx.fill();
+    };
+    for (const i of LIPS_OUTER) dot(sx[i], sy[i], 'rgba(255,255,255,0.9)');
+    for (let k = 0; k < LIP_RAYS; k++) {
+      const e = rayEnds(k), t = lipEdge.t[k];
+      dot(e[0] + t * (e[2] - e[0]), e[1] + t * (e[3] - e[1]), lipEdge.conf[k] > 0.5 ? '#3cff6a' : '#ff4040');
+    }
+  }
+  document.addEventListener('touchend', () => {
+    const t = Date.now();
+    if (t - lastTap < 300) toggleHud();
+    lastTap = t;
+  });
+  document.addEventListener('dblclick', toggleHud);
+  function updateHud() {
+    if (!hudOn) return;
+    const f = (v) => v.toFixed(2);
+    hud.textContent = [
+      'fps ' + fps + '  ' + (renderer ? renderer.name : '-') + '  face ' + landmarkerDelegate,
+      'light rgb ' + light.color.map(f).join(' ') + '  conf ' + f(light.colorConf),
+      'bg ' + f(light.bgFraction) + '  seg ' + (segmenter ? 'on' : 'off'),
+      'dir ' + light.dir.map(f).join(' ') + '  conf ' + f(light.dirConf),
+      'strength ' + f(light.strength) + '  lip ' + f(light.lipMeanLum) + '  skin ' + f(light.skinMeanLum),
+      'mouth gap ' + f(Math.hypot(sx[13] - sx[14], sy[13] - sy[14]) / Math.max(1e-4, Math.hypot(sx[61] - sx[291], sy[61] - sy[291]))) + (mouthClosed() ? ' closed' : ' open'),
+      'lip thick up ' + lipThick.up.toFixed(1) + 'px low ' + lipThick.low.toFixed(1) + 'px  /w ' + f(lipThick.upRatio) + ' ' + f(lipThick.lowRatio),
+      'thick base ' + (lipThick.upBase ? f(lipThick.upBase) + ' ' + f(lipThick.lowBase) + '  now/base ' + f(lipThick.upRatio / lipThick.upBase) + ' ' + f(lipThick.lowRatio / lipThick.lowBase) : '- (close mouth, face front)'),
+      'edge ' + (TUNING.lipEdgePx * lipThick.uvScale).toFixed(1) + 'px  band ' + (TUNING.lipBandPx * lipThick.uvScale).toFixed(1) + 'px  (share of up ' + f(TUNING.lipEdgePx * lipThick.uvScale / Math.max(1e-4, lipThick.up)) + ')',
+      'real edge / landmark  up ' + f(lipEdge.up) + '  low ' + f(lipEdge.low) + (lipEdge.samples ? '' : '  (no lip/skin contrast)'),
+      'lip shape ' + (TUNING.lipShape ? (shapeTrusted >= TUNING.lipShapeMinTrusted * LIP_RAYS ? 'measured' : 'landmarks') : 'off') + '  trusted ' + shapeTrusted + '/' + LIP_RAYS,
+      'lip up/low ' + f(light.lipUpLow) + '  grade ' + f(clamp(1 - Math.abs(1 - light.lipUpLow) / TUNING.gradeFlatRange, 0, 1)),
+      'lip rgb ' + light.lipColor.map(f).join(' ') + '  red lip ' + f(light.lipRed) + '  skin ' + f(light.skinRed) + '  grain ' + f(light.grain) + '  blur ' + f(light.blur),
+      'wb ' + (wbLocked ? 'locked' : 'auto') + (colorTempK ? '  ' + colorTempK + 'K' : ''),
+    ].join(NL);
+  }
+
+  // ── Main loop ────────────────────────────────────────────────────────
+  // Runs once per new camera frame: upload → detect on that frame → draw.
+  function processFrame(now) {
+    if (video.readyState < 2) return;
+    const W = video.videoWidth, H = video.videoHeight;
+    if (!W || !H) return;
+    if (renderer.lost) { setStatus('unavailable', 'webgl context lost'); return; }
+    try { renderer.upload(); } catch (e) { return; }
+
+    if (landmarker) {
+      try {
+        const result = landmarker.detectForVideo(video, now);
+        const face = result.faceLandmarks && result.faceLandmarks[0];
+        if (face) {
+          filterLandmarks(face, now / 1000);
+          hasFace = true;
+          lastFaceAt = now;
+          setStatus('tracking');
+        } else if (now - lastFaceAt > 700) {
+          hasFace = false;
+          edgeFresh = true;
+          lipThick.upBase = 0; lipThick.lowBase = 0;
+          lipEdge.samples = 0; lipEdge.conf.fill(0);
+          filterReady = false;
+          setStatus('no-face');
+        }
+      } catch (e) { /* skip frame */ }
+    }
+
+    if (hasFace) {
+      updateMesh(W, H);
+      if (now - lastLightAt > TUNING.lightEveryMs) {
+        lastLightAt = now;
+        try { sampleScene(now, W, H); } catch (e) { /* light estimation is best-effort */ }
+        measureLipThickness(W, H);
+        try { measureLipEdge(W, H); } catch (e) { /* edge measurement is best-effort */ }
+        updateHud();
+      }
+    }
+
+    fpsFrames++;
+    if (now - fpsAt >= 1000) { fps = fpsFrames; fpsFrames = 0; fpsAt = now; }
+
+    try { renderer.render(W, H); } catch (e) { /* skip frame */ }
+    if (hudOn) drawLipPoints(W, H);
+  }
+  // Prefer requestVideoFrameCallback (fires once per camera frame, AR_SPEC 6-1); else poll with rAF.
+  function onVideoFrame() {
+    video.requestVideoFrameCallback(onVideoFrame);
+    processFrame(performance.now());
+  }
+  function onAnimationFrame(now) {
+    requestAnimationFrame(onAnimationFrame);
+    if (video.currentTime === lastVideoTime) return;
+    lastVideoTime = video.currentTime;
+    processFrame(now);
+  }
+  function startLoop() {
+    if (typeof video.requestVideoFrameCallback === 'function') video.requestVideoFrameCallback(onVideoFrame);
+    else requestAnimationFrame(onAnimationFrame);
+  }
+
+  async function createLandmarker(vision, files, delegate) {
+    return vision.FaceLandmarker.createFromOptions(files, {
+      baseOptions: { modelAssetPath: MODEL_URL, delegate },
+      runningMode: 'VIDEO',
+      numFaces: 1,
+      minFaceDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+  }
+  async function createSegmenter(vision, files, delegate) {
+    return vision.ImageSegmenter.createFromOptions(files, {
+      baseOptions: { modelAssetPath: SEG_MODEL_URL, delegate },
+      runningMode: 'VIDEO',
+      outputCategoryMask: true,
+      outputConfidenceMasks: false,
+    });
+  }
+
+  // Camera info (6-6-1 ③): read color temperature, lock white balance after auto WB settles. Optional.
+  function tryLockWhiteBalance(track) {
+    try {
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      const settings = track.getSettings ? track.getSettings() : {};
+      if (settings.colorTemperature) colorTempK = settings.colorTemperature;
+      if (caps.whiteBalanceMode && caps.whiteBalanceMode.indexOf('manual') >= 0) {
+        track.applyConstraints({ advanced: [{ whiteBalanceMode: 'manual' }] })
+          .then(() => { wbLocked = true; })
+          .catch(() => {});
+      }
+    } catch (e) { /* not supported */ }
+  }
+
+  async function start() {
+    setStatus('loading');
+    post({ type: 'hello' });
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus('unavailable', 'getUserMedia not supported');
+      return;
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } },
+        audio: false,
+      });
+      video.srcObject = stream;
+      await video.play();
+    } catch (e) {
+      const name = e && e.name;
+      setStatus(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'unavailable', String(e && e.message));
+      return;
+    }
+    const track = stream.getVideoTracks()[0];
+    if (track) setTimeout(() => tryLockWhiteBalance(track), 2000);
+
+    try {
+      masks = paintMasks();
+      renderer = createGLRenderer();
+    } catch (e) {
+      renderer = null;
+    }
+    if (!renderer) {
+      setStatus('unavailable', 'webgl unavailable');
+      return;
+    }
+    startLoop();
+
+    let vision, files;
+    try {
+      vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + VERSION + '/vision_bundle.mjs');
+      files = await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + VERSION + '/wasm');
+      try { landmarker = await createLandmarker(vision, files, 'GPU'); landmarkerDelegate = 'gpu'; }
+      catch (e) { landmarker = await createLandmarker(vision, files, 'CPU'); landmarkerDelegate = 'cpu'; }
+    } catch (e) {
+      setStatus('unavailable', 'model: ' + String(e && e.message));
+      return;
+    }
+    // Segmenter only feeds the light color; AR keeps running without it.
+    try { segmenter = await createSegmenter(vision, files, 'GPU'); }
+    catch (e) {
+      try { segmenter = await createSegmenter(vision, files, 'CPU'); } catch (e2) { segmenter = null; }
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    const stream = video.srcObject;
+    if (!stream) return;
+    stream.getVideoTracks().forEach((t) => { t.enabled = !document.hidden; });
+  });
+
+
+  (async () => { try {
+    const W = 720, H = 960, rows = [];
+    const meta = await (await fetch('meta.json')).json();
+    const src = document.createElement('canvas'); src.width = W; src.height = H;
+    const s2 = src.getContext('2d', { willReadFrequently: true }); window.__src = src;
+    masks = paintMasks();
+    const load = (u) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = u; });
+    const rc = document.createElement('canvas'); rc.width = W; rc.height = H;
+    const rx = rc.getContext('2d', { willReadFrequently: true });
+    const poly = (pts) => { rx.beginPath(); pts.forEach((q, i) => { const x = q[0] * W, y = q[1] * H; i ? rx.lineTo(x, y) : rx.moveTo(x, y); }); rx.closePath(); };
+    const rasterize = (outerPts, innerPts) => {
+      rx.globalCompositeOperation = 'source-over'; rx.fillStyle = '#000'; rx.fillRect(0, 0, W, H);
+      rx.fillStyle = '#fff'; poly(outerPts); rx.fill();
+      rx.fillStyle = '#000'; poly(innerPts); rx.fill();
+      const d = rx.getImageData(0, 0, W, H).data, m = new Uint8Array(W * H);
+      for (let i = 0; i < W * H; i++) m[i] = d[i * 4] > 127 ? 1 : 0;
+      return m;
+    };
+    const score = (pred, gt) => {
+      let inter = 0, uni = 0, p = 0, gsum = 0, spill = 0, miss = 0;
+      for (let i = 0; i < W * H; i++) {
+        const a = pred[i], b = gt[i];
+        if (a) p++; if (b) gsum++;
+        if (a && b) inter++; if (a || b) uni++;
+        if (a && !b) spill++; if (b && !a) miss++;
+      }
+      return { iou: inter / Math.max(uni, 1), spill: spill / Math.max(p, 1), miss: miss / Math.max(gsum, 1) };
+    };
+    for (const name of Object.keys(meta)) {
+      const m = meta[name];
+      s2.drawImage(await load(name + '.jpg'), 0, 0);
+      const gtImg = await load(name + '_gt.png');
+      rx.fillStyle = '#000'; rx.fillRect(0, 0, W, H); rx.drawImage(gtImg, 0, 0);
+      const gd = rx.getImageData(0, 0, W, H).data, gt = new Uint8Array(W * H);
+      for (let i = 0; i < W * H; i++) gt[i] = gd[i * 4] > 127 ? 1 : 0;
+      for (let i = 0; i < 468; i++) { sx[i] = m.x[i]; sy[i] = m.y[i]; sz[i] = m.z[i]; }
+      hasFace = true; updateMesh(W, H);
+      light.samples = 0; lipEdge.samples = 0; lipEdge.conf.fill(0); lipEdge.t.fill(1);
+      for (let k = 0; k < 6; k++) sampleScene(k * 500, W, H);
+      for (let k = 0; k < 3; k++) measureLipEdge(W, H);
+      const land = [], meas = [], inner = LIPS_INNER.map((i) => [sx[i], sy[i]]);
+      let trusted = 0;
+      for (let r = 0; r < LIP_RAYS; r++) {
+        const e = rayEnds(r), ok = lipEdge.conf[r] > 0.5, t = ok ? clamp(lipEdge.t[r], TUNING.lipShapeT[0], TUNING.lipShapeT[1]) : 1;
+        if (ok) trusted++;
+        land.push([e[2], e[3]]); meas.push([e[0] + t * (e[2] - e[0]), e[1] + t * (e[3] - e[1])]);
+      }
+      const lm = score(rasterize(LIPS_OUTER.map((i) => [sx[i], sy[i]]), inner), gt);
+      const useMeas = TUNING.lipShape && trusted >= TUNING.lipShapeMinTrusted * LIP_RAYS;
+      const a2 = useMeas ? score(rasterize(meas, inner), gt) : lm;
+      rows.push({ name, trusted, used: useMeas ? 1 : 0, contrast: +(light.lipRed - light.skinRed).toFixed(3),
+        lm_iou: lm.iou, lm_spill: lm.spill, lm_miss: lm.miss, a2_iou: a2.iou, a2_spill: a2.spill, a2_miss: a2.miss });
+    }
+    const pre = document.createElement('pre'); pre.id = 'result'; pre.textContent = JSON.stringify(rows);
+    document.body.appendChild(pre); document.title = 'OK ' + rows.length;
+  } catch (e) { document.title = 'ERR ' + (e && e.stack || e); } })();
+</script>
+
+<pre id="result">[{"name":"3454003622_2","trusted":0,"used":0,"contrast":-0.061,"lm_iou":0.4489795918367347,"lm_spill":0.4060128429655575,"lm_miss":0.3522202769377686,"a2_iou":0.4489795918367347,"a2_spill":0.4060128429655575,"a2_miss":0.3522202769377686},{"name":"367049421_2","trusted":40,"used":1,"contrast":0.062,"lm_iou":0.7128466204506065,"lm_spill":0.13476202997633446,"lm_miss":0.19812355306445717,"a2_iou":0.6491359078301685,"a2_spill":0.1609211252068395,"a2_miss":0.25855976605336906},{"name":"4949872976_0","trusted":45,"used":1,"contrast":0.143,"lm_iou":0.4983363581367211,"lm_spill":0.282760121898128,"lm_miss":0.3798230754752494,"a2_iou":0.5619902120717781,"a2_spill":0.1916940403566401,"a2_miss":0.35159043854696026},{"name":"6901642674_4","trusted":34,"used":1,"contrast":0.044,"lm_iou":0.8092857829472268,"lm_spill":0.07878323667797352,"lm_miss":0.13053805638748323,"a2_iou":0.7250536480686696,"a2_spill":0.15619146722164412,"a2_miss":0.16255292781162864},{"name":"8658217541_0","trusted":33,"used":1,"contrast":0.021,"lm_iou":0.6966908797417272,"lm_spill":0.07421707421707421,"lm_miss":0.26209608480082064,"a2_iou":0.5677158999192897,"a2_spill":0.08956769350245923,"a2_miss":0.39870063258676697},{"name":"4165267803_1","trusted":41,"used":1,"contrast":0.134,"lm_iou":0.8704329631417994,"lm_spill":0.032038661177734025,"lm_miss":0.10374544249254226,"a2_iou":0.8421296296296297,"a2_spill":0.07555480264272404,"a2_miss":0.0956247928405701},{"name":"2566602438_6","trusted":47,"used":1,"contrast":0.13,"lm_iou":0.8570774688179426,"lm_spill":0.06421789105447276,"lm_miss":0.08936170212765958,"a2_iou":0.699859292131183,"a2_spill":0.1355614973262032,"a2_miss":0.21386018237082066},{"name":"14036372081_1","trusted":0,"used":0,"contrast":0,"lm_iou":0.8297480024585125,"lm_spill":0.12865748709122204,"lm_miss":0.05440112070978286,"a2_iou":0.8297480024585125,"a2_spill":0.12865748709122204,"a2_miss":0.05440112070978286},{"name":"151365707_0","trusted":38,"used":1,"contrast":0.125,"lm_iou":0.6924686192468619,"lm_spill":0.01401787278780445,"lm_miss":0.3006462838677604,"a2_iou":0.7645584725536992,"a2_spill":0.04954754487464768,"a2_miss":0.2037037037037037},{"name":"3010568313_0","trusted":47,"used":1,"contrast":0.152,"lm_iou":0.7006239500839933,"lm_spill":0.18529370726942934,"lm_miss":0.1665715101341707,"a2_iou":0.6038452939861391,"a2_spill":0.2642331789703078,"a2_miss":0.22894661718526976},{"name":"6600782551_2","trusted":0,"used":0,"contrast":0,"lm_iou":0.577297977151242,"lm_spill":0.2095292766934558,"lm_miss":0.3184011879717857,"a2_iou":0.577297977151242,"a2_spill":0.2095292766934558,"a2_miss":0.3184011879717857},{"name":"1033809434_0","trusted":40,"used":1,"contrast":0.142,"lm_iou":0.7863539445628998,"lm_spill":0.11938872970391595,"lm_miss":0.1198090692124105,"a2_iou":0.7253549157489717,"a2_spill":0.18633725256734632,"a2_miss":0.130151153540175},{"name":"5378530735_1","trusted":46,"used":1,"contrast":0.297,"lm_iou":0.8026858729086953,"lm_spill":0.1938667872212176,"lm_miss":0.005299367794719226,"a2_iou":0.7712677682372465,"a2_spill":0.2249854988399072,"a2_miss":0.006229081442915582},{"name":"999647709_0","trusted":43,"used":1,"contrast":0.095,"lm_iou":0.7262266059686393,"lm_spill":0.17366906474820143,"lm_miss":0.14296373675570812,"a2_iou":0.6817266549207148,"a2_spill":0.18688081657160013,"a2_miss":0.19161319206088642},{"name":"12654447745_3","trusted":49,"used":1,"contrast":0.139,"lm_iou":0.9091810184611572,"lm_spill":0.08980401885388241,"lm_miss":0.0012249897917517355,"a2_iou":0.8203620431223336,"a2_spill":0.15709039213363346,"a2_miss":0.03157751463182251},{"name":"12023443613_1","trusted":46,"used":1,"contrast":0.142,"lm_iou":0.5907048008171604,"lm_spill":0.25119772109283955,"lm_miss":0.26331210191082804,"a2_iou":0.6259567023835556,"a2_spill":0.18458908987323744,"a2_miss":0.27070063694267515},{"name":"5542646915_0","trusted":37,"used":1,"contrast":0.171,"lm_iou":0.6255473350445417,"lm_spill":0.12888982338099242,"lm_miss":0.310648918469218,"a2_iou":0.6500687337711929,"a2_spill":0.11203838931775506,"a2_miss":0.291846921797005},{"name":"5551605103_0","trusted":0,"used":0,"contrast":0.013,"lm_iou":0.6659310634720471,"lm_spill":0.1522408026755853,"lm_miss":0.24361422773931726,"a2_iou":0.6659310634720471,"a2_spill":0.1522408026755853,"a2_miss":0.24361422773931726},{"name":"331461582_0","trusted":32,"used":1,"contrast":0.042,"lm_iou":0.5425858698687518,"lm_spill":0.2791021241072257,"lm_miss":0.3131241714538224,"a2_iou":0.5482048951502954,"a2_spill":0.3262049154165337,"a2_miss":0.25373398144056564},{"name":"5827967086_0","trusted":52,"used":1,"contrast":0.268,"lm_iou":0.7757496740547588,"lm_spill":0.19628013300083125,"lm_miss":0.04293491709972779,"a2_iou":0.7090844190612172,"a2_spill":0.2822041553748871,"a2_miss":0.016827517941103688},{"name":"150285999_2","trusted":39,"used":1,"contrast":0.188,"lm_iou":0.7684614490056983,"lm_spill":0.12279304393999735,"lm_miss":0.13891060724524368,"a2_iou":0.7483526471256533,"a2_spill":0.14620868438107582,"a2_miss":0.14164712014594735},{"name":"7914308816_0","trusted":0,"used":0,"contrast":-0.04,"lm_iou":0.5626326963906582,"lm_spill":0.2925130586186883,"lm_miss":0.26681101888608205,"a2_iou":0.5626326963906582,"a2_spill":0.2925130586186883,"a2_miss":0.26681101888608205},{"name":"6063432573_0","trusted":33,"used":1,"contrast":0.176,"lm_iou":0.7302812295618051,"lm_spill":0.09189980481457384,"lm_miss":0.2114406779661017,"a2_iou":0.8008764015981441,"a2_spill":0.09850573045118236,"a2_miss":0.12231638418079097},{"name":"5926020529_2","trusted":17,"used":0,"contrast":0.06,"lm_iou":0.8141230651144941,"lm_spill":0.04958183990442055,"lm_miss":0.14976619906479627,"a2_iou":0.8141230651144941,"a2_spill":0.04958183990442055,"a2_miss":0.14976619906479627},{"name":"6198038944_4","trusted":49,"used":1,"contrast":0.486,"lm_iou":0.837378640776699,"lm_spill":0.1011554145899411,"lm_miss":0.07549807759524642,"a2_iou":0.7987748851454823,"a2_spill":0.1341301460823373,"a2_miss":0.08843061866480252},{"name":"3397957606_0","trusted":52,"used":1,"contrast":0.183,"lm_iou":0.8934344156772994,"lm_spill":0.05263157894736842,"lm_miss":0.059903672486453945,"a2_iou":0.6825136612021858,"a2_spill":0.11918194640338504,"a2_miss":0.24804334738109574},{"name":"8997213160_1","trusted":0,"used":0,"contrast":0.003,"lm_iou":0.788834780153857,"lm_spill":0.036714642764802206,"lm_miss":0.1867132358291494,"a2_iou":0.788834780153857,"a2_spill":0.036714642764802206,"a2_miss":0.1867132358291494},{"name":"8031662396_6","trusted":42,"used":1,"contrast":0.082,"lm_iou":0.5994735886730804,"lm_spill":0.24643468339988592,"lm_miss":0.25434635357868596,"a2_iou":0.6235350624399616,"a2_spill":0.19296282481661073,"a2_miss":0.2672160758636261},{"name":"6971736027_1","trusted":39,"used":1,"contrast":0.115,"lm_iou":0.7439834024896266,"lm_spill":0.1162045594577942,"lm_miss":0.1753478210877314,"a2_iou":0.7901790281329923,"a2_spill":0.12247216541695069,"a2_miss":0.11187765896286075},{"name":"9597285677_0","trusted":45,"used":1,"contrast":0.174,"lm_iou":0.7885825591848966,"lm_spill":0.17585342937676166,"lm_miss":0.051882543685822374,"a2_iou":0.7520977476814368,"a2_spill":0.19555975436939066,"a2_miss":0.07962529274004684},{"name":"11960137384_4","trusted":38,"used":1,"contrast":0.141,"lm_iou":0.6175961954172071,"lm_spill":0.280835710689713,"lm_miss":0.18611717785585413,"a2_iou":0.5978435902821536,"a2_spill":0.30526401431942074,"a2_miss":0.18915582565758238},{"name":"11344804476_0","trusted":0,"used":0,"contrast":-0.028,"lm_iou":0.8219432821943282,"lm_spill":0.16238303920407438,"lm_miss":0.022259090280658096,"a2_iou":0.8219432821943282,"a2_spill":0.16238303920407438,"a2_miss":0.022259090280658096},{"name":"13185838325_0","trusted":43,"used":1,"contrast":0.092,"lm_iou":0.739009139009139,"lm_spill":0.06533641562233848,"lm_miss":0.22073442889024142,"a2_iou":0.743391360412637,"a2_spill":0.1101433296582139,"a2_miss":0.18127409210793263},{"name":"299351949_0","trusted":0,"used":0,"contrast":0.009,"lm_iou":0.697909732392491,"lm_spill":0.17148727675043465,"lm_miss":0.18425147836912542,"a2_iou":0.697909732392491,"a2_spill":0.17148727675043465,"a2_miss":0.18425147836912542},{"name":"7926104228_7","trusted":0,"used":0,"contrast":-0.023,"lm_iou":0.5698246265194395,"lm_spill":0.22167300380228136,"lm_miss":0.3197828976517501,"a2_iou":0.5698246265194395,"a2_spill":0.22167300380228136,"a2_miss":0.3197828976517501},{"name":"540062927_1","trusted":45,"used":1,"contrast":0.078,"lm_iou":0.6879519412615419,"lm_spill":0.18845144356955382,"lm_miss":0.18125248245730174,"a2_iou":0.6782734109405584,"a2_spill":0.2465094987411307,"a2_miss":0.12829339335363432},{"name":"4870278701_0","trusted":47,"used":1,"contrast":0.184,"lm_iou":0.6955987214162773,"lm_spill":0.13420045906656466,"lm_miss":0.22033898305084745,"a2_iou":0.6508818555206571,"a2_spill":0.1593072242159463,"a2_miss":0.2575444398511782},{"name":"4876022912_0","trusted":33,"used":1,"contrast":0.174,"lm_iou":0.7908202376389422,"lm_spill":0.07207105914099393,"lm_miss":0.157427258805513,"a2_iou":0.7916821734276145,"a2_spill":0.10071866413020503,"a2_miss":0.13129147524247065},{"name":"4832818348_2","trusted":37,"used":1,"contrast":0.099,"lm_iou":0.7163341645885287,"lm_spill":0.1553954719200235,"lm_miss":0.17492460146488584,"a2_iou":0.7506029908345393,"a2_spill":0.175956573546935,"a2_miss":0.10613241418928623},{"name":"9601056169_0","trusted":36,"used":1,"contrast":0.104,"lm_iou":0.7699065210046176,"lm_spill":0.13588673998230313,"lm_miss":0.12403895438236802,"a2_iou":0.7487548422800221,"a2_spill":0.153951975987994,"a2_miss":0.13313685289595079},{"name":"13875060115_0","trusted":30,"used":1,"contrast":0.171,"lm_iou":0.7389775493643495,"lm_spill":0.13007482884890942,"lm_miss":0.16922609092291319,"a2_iou":0.6996716342510735,"a2_spill":0.19488446446737392,"a2_miss":0.15767067051847347},{"name":"4968262093_0","trusted":44,"used":1,"contrast":0.184,"lm_iou":0.6304437992534219,"lm_spill":0.22894825836996957,"lm_miss":0.22435788399387652,"a2_iou":0.6220680083275503,"a2_spill":0.22830578512396693,"a2_miss":0.23762544650450756},{"name":"2927014232_0","trusted":46,"used":1,"contrast":0.064,"lm_iou":0.6424501424501424,"lm_spill":0.20353200883002207,"lm_miss":0.23135918193438432,"a2_iou":0.566262353998203,"a2_spill":0.26980448950036207,"a2_miss":0.28390853571935804},{"name":"2907195282_1","trusted":44,"used":1,"contrast":0.132,"lm_iou":0.6411746131986107,"lm_spill":0.19420634920634922,"lm_miss":0.24163429937257244,"a2_iou":0.6191633282984172,"a2_spill":0.16322002307624034,"a2_miss":0.29578727218404544},{"name":"10379826474_0","trusted":32,"used":1,"contrast":0.025,"lm_iou":0.7437068888291678,"lm_spill":0.20034675399730303,"lm_miss":0.08598480678190025,"a2_iou":0.666146132982658,"a2_spill":0.2756278487800518,"a2_miss":0.10767367609820544},{"name":"4027426331_6","trusted":49,"used":1,"contrast":0.146,"lm_iou":0.6888590604026845,"lm_spill":0.18084596967278532,"lm_miss":0.18758904543295868,"a2_iou":0.6013495276653171,"a2_spill":0.196972427464408,"a2_miss":0.29460186797530474},{"name":"2511524397_0","trusted":56,"used":1,"contrast":0.174,"lm_iou":0.8239249016871749,"lm_spill":0.13319097824636328,"lm_miss":0.05664488017429194,"a2_iou":0.7916405956701289,"a2_spill":0.14881593110871905,"a2_miss":0.08119099491648511},{"name":"13764666014_0","trusted":48,"used":1,"contrast":0.202,"lm_iou":0.8687491245272447,"lm_spill":0.079002079002079,"lm_miss":0.06129862267292266,"a2_iou":0.6746166950596252,"a2_spill":0.0842166120639815,"a2_miss":0.28076282730437413},{"name":"2342024827_0","trusted":54,"used":1,"contrast":0.234,"lm_iou":0.8467256637168141,"lm_spill":0.12139577594123048,"lm_miss":0.04109039887753057,"a2_iou":0.8797456517673462,"a2_spill":0.07072303437376531,"a2_miss":0.057125676488274206},{"name":"405417082_1","trusted":49,"used":1,"contrast":0.147,"lm_iou":0.6768386108273748,"lm_spill":0.04175704989154013,"lm_miss":0.30259176424154716,"a2_iou":0.7154601226993865,"a2_spill":0.08605015673981191,"a2_miss":0.23286409682936457},{"name":"9317465073_3","trusted":35,"used":1,"contrast":0.168,"lm_iou":0.6933962264150944,"lm_spill":0.1560962274466922,"lm_miss":0.2045864467920639,"a2_iou":0.6248316120341266,"a2_spill":0.17073897497020263,"a2_miss":0.2829167740273125},{"name":"74350501_0","trusted":43,"used":1,"contrast":0.157,"lm_iou":0.6946831900859485,"lm_spill":0.0018667432510051695,"lm_miss":0.30441308916241366,"a2_iou":0.7246691871455576,"a2_spill":0.07111703416525321,"a2_miss":0.2327629340538377},{"name":"4991297736_2","trusted":40,"used":1,"contrast":0.146,"lm_iou":0.7589885842313027,"lm_spill":0.06098204857444562,"lm_miss":0.2016608685893839,"a2_iou":0.7060954816709293,"a2_spill":0.06662910269051979,"a2_miss":0.25642464369879925},{"name":"2741926959_0","trusted":0,"used":0,"contrast":-0.033,"lm_iou":0.8327924472636082,"lm_spill":0.08870056497175141,"lm_miss":0.09374749177301549,"a2_iou":0.8327924472636082,"a2_spill":0.08870056497175141,"a2_miss":0.09374749177301549},{"name":"5851197059_1","trusted":40,"used":1,"contrast":0.239,"lm_iou":0.7626360518860892,"lm_spill":0.11197916666666667,"lm_miss":0.1562190696139888,"a2_iou":0.7075928917609047,"a2_spill":0.20628209000302022,"a2_miss":0.1329594193335533},{"name":"4680204315_1","trusted":38,"used":1,"contrast":0.138,"lm_iou":0.7516323455549975,"lm_spill":0.1247258371106887,"lm_miss":0.15820559696245254,"a2_iou":0.6292637026581981,"a2_spill":0.20634920634920634,"a2_miss":0.2476444944452257},{"name":"2118491698_0","trusted":33,"used":1,"contrast":0.111,"lm_iou":0.6802004499897729,"lm_spill":0.1623425692695214,"lm_miss":0.21651549063493933,"a2_iou":0.6570335313664284,"a2_spill":0.18099661102045939,"a2_miss":0.23135822829544117},{"name":"80307720_0","trusted":46,"used":1,"contrast":0.165,"lm_iou":0.7103545244551571,"lm_spill":0.10592845405132094,"lm_miss":0.2243667068757539,"a2_iou":0.7322866344605475,"a2_spill":0.10095143951563079,"a2_miss":0.20210549402346747},{"name":"7185340043_0","trusted":40,"used":1,"contrast":0.118,"lm_iou":0.7901414034624026,"lm_spill":0.0596099402327776,"lm_miss":0.16819699499165275,"a2_iou":0.6846965699208444,"a2_spill":0.07022572554639914,"a2_miss":0.27796327212020033},{"name":"2555035899_1","trusted":40,"used":1,"contrast":0.083,"lm_iou":0.734056399132321,"lm_spill":0.16916277927817333,"lm_miss":0.1369548584544759,"a2_iou":0.5947290431837426,"a2_spill":0.22228373702422144,"a2_miss":0.2834736036725325},{"name":"2781204564_0","trusted":34,"used":1,"contrast":0.037,"lm_iou":0.6773658536585366,"lm_spill":0.29719607247697133,"lm_miss":0.050724637681159424,"a2_iou":0.6180091111757294,"a2_spill":0.3201833884209404,"a2_miss":0.12824719715613891},{"name":"8495166109_3","trusted":54,"used":1,"contrast":0.168,"lm_iou":0.8529990167158309,"lm_spill":0.09082969432314411,"lm_miss":0.06753851666069509,"a2_iou":0.6983969591803008,"a2_spill":0.09989350372736955,"a2_miss":0.24292368326764602},{"name":"2692891520_0","trusted":42,"used":1,"contrast":0.145,"lm_iou":0.593809097242958,"lm_spill":0.2179840083890418,"lm_miss":0.2884064885496183,"a2_iou":0.6166880110333958,"a2_spill":0.2201320543166812,"a2_miss":0.25333969465648853},{"name":"3639439947_0","trusted":48,"used":1,"contrast":0.172,"lm_iou":0.855779269202088,"lm_spill":0.08206686930091185,"lm_miss":0.0733204134366925,"a2_iou":0.8392935982339956,"a2_spill":0.0956232159847764,"a2_miss":0.07897286821705427},{"name":"4866286372_2","trusted":38,"used":1,"contrast":0.101,"lm_iou":0.7851762579090087,"lm_spill":0.07077910500980567,"lm_miss":0.16487742348982534,"a2_iou":0.7432944606413994,"a2_spill":0.10825463448758307,"a2_miss":0.1829834962345778},{"name":"2668081484_0","trusted":39,"used":1,"contrast":0.303,"lm_iou":0.7530107526881721,"lm_spill":0.15494147459876917,"lm_miss":0.12637225548902195,"a2_iou":0.7654876099120703,"a2_spill":0.20636071687558272,"a2_miss":0.04428642714570858},{"name":"4450013539_0","trusted":43,"used":1,"contrast":0.135,"lm_iou":0.7847706422018349,"lm_spill":0.14800796812749004,"lm_miss":0.09135330359039728,"a2_iou":0.7568316100443131,"a2_spill":0.14746256239600666,"a2_miss":0.1291693222859571},{"name":"2138675725_0","trusted":41,"used":1,"contrast":0.046,"lm_iou":0.693687230989957,"lm_spill":0.19937075674780594,"lm_miss":0.16146375303503296,"a2_iou":0.6355739676600294,"a2_spill":0.2652556774293218,"a2_miss":0.1751647589316684},{"name":"8462640055_7","trusted":45,"used":1,"contrast":0.161,"lm_iou":0.775986367807052,"lm_spill":0.04914873112752972,"lm_miss":0.19158814693431653,"a2_iou":0.7612569227064773,"a2_spill":0.1345469477142075,"a2_miss":0.13655605626109518},{"name":"104361370_2","trusted":34,"used":1,"contrast":0.101,"lm_iou":0.712701754385965,"lm_spill":0.119625520110957,"lm_miss":0.2108780108780109,"a2_iou":0.7064091799608172,"a2_spill":0.12345893384268102,"a2_miss":0.21554001554001553},{"name":"352241251_10","trusted":43,"used":1,"contrast":0.102,"lm_iou":0.747330332715559,"lm_spill":0.196203132415757,"lm_miss":0.08592400690846287,"a2_iou":0.7482114652048686,"a2_spill":0.15693048576214405,"a2_miss":0.1307210708117444},{"name":"2997193598_0","trusted":44,"used":1,"contrast":0.147,"lm_iou":0.6123171307220387,"lm_spill":0.22618160131206203,"lm_miss":0.25420319011352205,"a2_iou":0.6021291530182499,"a2_spill":0.23589667458432304,"a2_miss":0.26038223882741773},{"name":"8606346658_0","trusted":18,"used":0,"contrast":0.021,"lm_iou":0.41661225022854903,"lm_spill":0.42397977609245213,"lm_miss":0.39913354680730834,"a2_iou":0.41661225022854903,"a2_spill":0.42397977609245213,"a2_miss":0.39913354680730834},{"name":"6226702071_2","trusted":48,"used":1,"contrast":0.2,"lm_iou":0.44709554011879593,"lm_spill":0.37344808126410833,"lm_miss":0.3904748833379083,"a2_iou":0.406749902458057,"a2_spill":0.4156390134529148,"a2_miss":0.42766950315673896},{"name":"2731416191_0","trusted":47,"used":1,"contrast":0.213,"lm_iou":0.8428128231644261,"lm_spill":0.03307133323446537,"lm_miss":0.1321709037668042,"a2_iou":0.7763837638376384,"a2_spill":0.08904603838937798,"a2_miss":0.15985624916810862},{"name":"2348149225_1","trusted":45,"used":1,"contrast":0.131,"lm_iou":0.813953488372093,"lm_spill":0.10502831645786855,"lm_miss":0.1000862812769629,"a2_iou":0.8093057607090104,"a2_spill":0.1510691044313604,"a2_miss":0.0545297670405522},{"name":"149196124_4","trusted":27,"used":1,"contrast":0.023,"lm_iou":0.33768602976476236,"lm_spill":0.505275003516669,"lm_miss":0.48453759343397335,"a2_iou":0.3390222736476714,"a2_spill":0.5022650056625142,"a2_miss":0.4846841565293859},{"name":"2682901010_2","trusted":54,"used":1,"contrast":0.15,"lm_iou":0.842006504878659,"lm_spill":0.14320264765784113,"lm_miss":0.02009026059106129,"a2_iou":0.7944322545255074,"a2_spill":0.06805019305019305,"a2_miss":0.15664579997088368},{"name":"2975161300_6","trusted":36,"used":1,"contrast":0.06,"lm_iou":0.530718954248366,"lm_spill":0.32197728790915164,"lm_miss":0.2904578818594897,"a2_iou":0.5423728813559322,"a2_spill":0.2865875584322186,"a2_miss":0.30653617616218104},{"name":"9659626043_0","trusted":55,"used":1,"contrast":0.175,"lm_iou":0.6564344746162928,"lm_spill":0.17175629375837925,"lm_miss":0.24012573459067924,"a2_iou":0.659476294843696,"a2_spill":0.19125760362144575,"a2_miss":0.21866885335520023},{"name":"4340779478_0","trusted":45,"used":1,"contrast":0.412,"lm_iou":0.7008378047632495,"lm_spill":0.06960759810047489,"lm_miss":0.2603814822173654,"a2_iou":0.6884787472035794,"a2_spill":0.08225646123260437,"a2_miss":0.2662427975362607},{"name":"4994879006_8","trusted":50,"used":1,"contrast":0.162,"lm_iou":0.5699288858787673,"lm_spill":0.2637795275590551,"lm_miss":0.28382978723404256,"a2_iou":0.5891404704330622,"a2_spill":0.27645788336933047,"a2_miss":0.2397163120567376},{"name":"3379960770_0","trusted":58,"used":1,"contrast":0.228,"lm_iou":0.744475138121547,"lm_spill":0.1428117048346056,"lm_miss":0.15011037527593818,"a2_iou":0.7009371180225452,"a2_spill":0.1651569071497897,"a2_miss":0.18621885840428887},{"name":"6209059954_5","trusted":0,"used":0,"contrast":0.018,"lm_iou":0.5649676078718983,"lm_spill":0.35446927374301673,"lm_miss":0.18093212830054936,"a2_iou":0.5649676078718983,"a2_spill":0.35446927374301673,"a2_miss":0.18093212830054936},{"name":"5084532753_0","trusted":51,"used":1,"contrast":0.184,"lm_iou":0.7931582162492364,"lm_spill":0.06589928057553956,"lm_miss":0.1598291704413097,"a2_iou":0.7655651340996169,"a2_spill":0.08904402336515173,"a2_miss":0.17251197101074156},{"name":"13105267874_1","trusted":31,"used":1,"contrast":0.066,"lm_iou":0.8154818702290076,"lm_spill":0.052522172949002216,"lm_miss":0.14590880699562772,"a2_iou":0.779743322927506,"a2_spill":0.08716838115863562,"a2_miss":0.157526545908807},{"name":"9667801518_0","trusted":50,"used":1,"contrast":0.188,"lm_iou":0.801462621885157,"lm_spill":0.00033783783783783786,"lm_miss":0.19832023841777296,"a2_iou":0.6321375789332259,"a2_spill":0.012798992866135124,"a2_miss":0.3626388512598212},{"name":"2185716114_0","trusted":48,"used":1,"contrast":0.126,"lm_iou":0.8245253976398152,"lm_spill":0.07961053837342497,"lm_miss":0.11215469613259668,"a2_iou":0.7955473098330241,"a2_spill":0.11611927992304522,"a2_miss":0.11160220994475138},{"name":"10854132605_0","trusted":40,"used":1,"contrast":0.142,"lm_iou":0.8106738726566458,"lm_spill":0.014171287738755391,"lm_miss":0.1797676008202324,"a2_iou":0.7653061224489796,"a2_spill":0.04595814526056627,"a2_miss":0.20539986329460014},{"name":"6374783_0","trusted":44,"used":1,"contrast":0.152,"lm_iou":0.7490710636321412,"lm_spill":0.10946990612921038,"lm_miss":0.1749584345824274,"a2_iou":0.6084662154410921,"a2_spill":0.14479200257981295,"a2_miss":0.3216523852155007},{"name":"2601805984_1","trusted":33,"used":1,"contrast":0.149,"lm_iou":0.6919241192411925,"lm_spill":0.1958931720836483,"lm_miss":0.16779661016949152,"a2_iou":0.6098252243741143,"a2_spill":0.3110992529348986,"a2_miss":0.15840938722294653},{"name":"5275437452_0","trusted":42,"used":1,"contrast":0.13,"lm_iou":0.772391212505281,"lm_spill":0.16432407724831447,"lm_miss":0.08929016189290162,"a2_iou":0.7399701343952215,"a2_spill":0.21327265029635903,"a2_miss":0.07434620174346201},{"name":"7609824722_13","trusted":39,"used":1,"contrast":0.153,"lm_iou":0.8425531914893617,"lm_spill":0.10766149223835754,"lm_miss":0.06210526315789474,"a2_iou":0.8099920877133492,"a2_spill":0.14822298823249733,"a2_miss":0.057105263157894735},{"name":"3740670071_5","trusted":55,"used":1,"contrast":0.407,"lm_iou":0.9067546692880214,"lm_spill":0.06542191344622955,"lm_miss":0.03178887389413705,"a2_iou":0.8223608811919012,"a2_spill":0.15493326354357498,"a2_miss":0.031638926375768484},{"name":"5924022939_3","trusted":41,"used":1,"contrast":0.075,"lm_iou":0.7725260602598886,"lm_spill":0.07188196946302967,"lm_miss":0.17831105710814094,"a2_iou":0.7851841671247939,"a2_spill":0.10804059328649493,"a2_miss":0.13229040097205347},{"name":"11353710595_0","trusted":47,"used":1,"contrast":0.305,"lm_iou":0.7009692473375613,"lm_spill":0.17259887005649718,"lm_miss":0.17897687456201822,"a2_iou":0.7519638181385384,"a2_spill":0.16704021094264998,"a2_miss":0.11450595655220742},{"name":"12908941174_4","trusted":45,"used":1,"contrast":0.148,"lm_iou":0.7890699904122723,"lm_spill":0.0864256263875674,"lm_miss":0.14727649496743636,"a2_iou":0.7740922740922741,"a2_spill":0.09133151738503445,"a2_miss":0.16059798697454114},{"name":"2566694653_0","trusted":48,"used":1,"contrast":0.229,"lm_iou":0.749518522714399,"lm_spill":0.20442520442520443,"lm_miss":0.07169917216220008,"a2_iou":0.7511867546601829,"a2_spill":0.18879719929982497,"a2_miss":0.0896590430756279},{"name":"4451663492_1","trusted":40,"used":1,"contrast":0.176,"lm_iou":0.7910401002506265,"lm_spill":0.1631683605832965,"lm_miss":0.064699345598222,"a2_iou":0.7646017699115044,"a2_spill":0.21031786330862193,"a2_miss":0.039881466847758985},{"name":"194252783_1","trusted":31,"used":1,"contrast":0.061,"lm_iou":0.6923948449228154,"lm_spill":0.16512978142076504,"lm_miss":0.19773547751887102,"a2_iou":0.6445993031358885,"a2_spill":0.15170042032862055,"a2_miss":0.27141450607154577},{"name":"8448634929_0","trusted":0,"used":0,"contrast":-0.001,"lm_iou":0.8381470367591898,"lm_spill":0.12217638970732665,"lm_miss":0.051167728237791935,"a2_iou":0.8381470367591898,"a2_spill":0.12217638970732665,"a2_miss":0.051167728237791935},{"name":"1877734344_0","trusted":28,"used":1,"contrast":0.09,"lm_iou":0.7025615268709191,"lm_spill":0.045187713310580205,"lm_miss":0.2732751454696592,"a2_iou":0.679801033843753,"a2_spill":0.08277404921700224,"a2_miss":0.2757689110556941},{"name":"1978901940_1","trusted":36,"used":1,"contrast":0.029,"lm_iou":0.7905083704500077,"lm_spill":0.11487532244196044,"lm_miss":0.11911689200753038,"a2_iou":0.6362126245847176,"a2_spill":0.1560496794871795,"a2_miss":0.27896628444292315},{"name":"4410452882_2","trusted":49,"used":1,"contrast":0.174,"lm_iou":0.8327013160829801,"lm_spill":0.11843192820876136,"lm_miss":0.06241366319226422,"a2_iou":0.698006318771108,"a2_spill":0.15951725042634132,"a2_miss":0.1954037423081753},{"name":"8288495616_0","trusted":50,"used":1,"contrast":0.127,"lm_iou":0.6004799797903246,"lm_spill":0.24647329212236488,"lm_miss":0.25275070732474064,"a2_iou":0.6337346244438629,"a2_spill":0.20904785235995427,"a2_miss":0.2387613957874882},{"name":"4072420018_0","trusted":44,"used":1,"contrast":0.193,"lm_iou":0.7719679251587036,"lm_spill":0.2005190311418685,"lm_miss":0.042676610731303084,"a2_iou":0.7473135786388798,"a2_spill":0.222692633361558,"a2_miss":0.049098819142324425},{"name":"7577659084_0","trusted":41,"used":1,"contrast":0.103,"lm_iou":0.8194563173191999,"lm_spill":0.10943887030843552,"lm_miss":0.08878326996197719,"a2_iou":0.7313664596273292,"a2_spill":0.200339558573854,"a2_miss":0.10456273764258556},{"name":"12819972853_0","trusted":42,"used":1,"contrast":0.21,"lm_iou":0.7953461482873248,"lm_spill":0.05592726025047178,"lm_miss":0.16532686182314577,"a2_iou":0.8070276497695853,"a2_spill":0.05894206549118388,"a2_miss":0.15000758380100107},{"name":"1427866009_0","trusted":42,"used":1,"contrast":0.089,"lm_iou":0.8028114017961734,"lm_spill":0.16038795303726391,"lm_miss":0.05176986048656751,"a2_iou":0.7164835164835165,"a2_spill":0.24898636196092885,"a2_miss":0.060302086936469504},{"name":"2590618790_0","trusted":0,"used":0,"contrast":0.015,"lm_iou":0.7707707707707707,"lm_spill":0.03365658870507701,"lm_miss":0.20796708434636244,"a2_iou":0.7707707707707707,"a2_spill":0.03365658870507701,"a2_miss":0.20796708434636244},{"name":"11255335815_4","trusted":40,"used":1,"contrast":0.147,"lm_iou":0.5954126518642647,"lm_spill":0.17260951826517246,"lm_miss":0.32013872279359007,"a2_iou":0.6372345679012346,"a2_spill":0.214607425441266,"a2_miss":0.22841425496292753},{"name":"3923542672_0","trusted":52,"used":1,"contrast":0.163,"lm_iou":0.7297898640296663,"lm_spill":0.1211670139922596,"lm_miss":0.188565145684442,"a2_iou":0.751122754491018,"a2_spill":0.10945126460582753,"a2_miss":0.17248488180318858},{"name":"8057664166_0","trusted":47,"used":1,"contrast":0.457,"lm_iou":0.592719836400818,"lm_spill":0.20504662643993418,"lm_miss":0.30030899961375046,"a2_iou":0.5624543462381301,"a2_spill":0.3021569693674098,"a2_miss":0.2564696794129007},{"name":"5803325779_1","trusted":39,"used":1,"contrast":0.173,"lm_iou":0.773229461756374,"lm_spill":0.05126868265554397,"lm_miss":0.19305247597930525,"a2_iou":0.717361678931589,"a2_spill":0.09816686654103135,"a2_miss":0.22187730968218772},{"name":"3416952050_0","trusted":46,"used":1,"contrast":0.11,"lm_iou":0.7164042892995665,"lm_spill":0.11199095022624435,"lm_miss":0.21244043140205668,"a2_iou":0.7245995423340961,"a2_spill":0.10790252148189886,"a2_miss":0.2057938299473288},{"name":"4899829913_0","trusted":48,"used":1,"contrast":0.114,"lm_iou":0.8207157198535491,"lm_spill":0.04977437440175031,"lm_miss":0.14241638899173145,"a2_iou":0.7580331618067467,"a2_spill":0.08829597029294457,"a2_miss":0.18190793533259286},{"name":"12440738294_1","trusted":46,"used":1,"contrast":0.177,"lm_iou":0.763188000508453,"lm_spill":0.11692896014119723,"lm_miss":0.1510180995475113,"a2_iou":0.7714033539276258,"a2_spill":0.12311881897663753,"a2_miss":0.13489819004524886},{"name":"4830128666_0","trusted":45,"used":1,"contrast":0.112,"lm_iou":0.8440281030444965,"lm_spill":0.11507611720412506,"lm_miss":0.05191160996141705,"a2_iou":0.7449615774974626,"a2_spill":0.1886941417969367,"a2_miss":0.09891266222378113},{"name":"13781765084_0","trusted":49,"used":1,"contrast":0.192,"lm_iou":0.8235902741852044,"lm_spill":0.11135919620429807,"lm_miss":0.08162676665705221,"a2_iou":0.7277615429573349,"a2_spill":0.20657576143749204,"a2_miss":0.10210556677242573},{"name":"3988639211_1","trusted":51,"used":1,"contrast":0.177,"lm_iou":0.7499709808473592,"lm_spill":0.16728959917515143,"lm_miss":0.11698783654503211,"a2_iou":0.7358604091456077,"a2_spill":0.13970174451322454,"a2_miss":0.16427497608309416},{"name":"10473218624_0","trusted":57,"used":1,"contrast":0.341,"lm_iou":0.7969497221145146,"lm_spill":0.09919649379108839,"lm_miss":0.1263814111646359,"a2_iou":0.8112225938312895,"a2_spill":0.13418826017979904,"a2_miss":0.07211674695381128},{"name":"12029433325_2","trusted":45,"used":1,"contrast":0.133,"lm_iou":0.8757849920170303,"lm_spill":0.03256907701352146,"lm_miss":0.09760912480807195,"a2_iou":0.756636291600634,"a2_spill":0.11349657653475688,"a2_miss":0.16220662425970608},{"name":"5245196738_0","trusted":50,"used":1,"contrast":0.133,"lm_iou":0.7901983074396868,"lm_spill":0.07015457788347206,"lm_miss":0.15970449966420416,"a2_iou":0.800073457394711,"a2_spill":0.09961421879305594,"a2_miss":0.12222968435191403},{"name":"2173578174_0","trusted":49,"used":1,"contrast":0.118,"lm_iou":0.546793534932221,"lm_spill":0.21427233564337891,"lm_miss":0.35738357843137253,"a2_iou":0.6455380577427822,"a2_spill":0.18166694393611713,"a2_miss":0.24647671568627452},{"name":"8247384246_0","trusted":43,"used":1,"contrast":0.147,"lm_iou":0.8780661722760981,"lm_spill":0.08118191314729145,"lm_miss":0.04808286951144094,"a2_iou":0.7451475671363998,"a2_spill":0.15828202432797717,"a2_miss":0.133426097711812},{"name":"5309873053_0","trusted":39,"used":1,"contrast":0.161,"lm_iou":0.8071391439958413,"lm_spill":0.10766283524904215,"lm_miss":0.10577846035707429,"a2_iou":0.7106510745891277,"a2_spill":0.19925213675213677,"a2_miss":0.1366865041274717},{"name":"4326841386_0","trusted":56,"used":1,"contrast":0.186,"lm_iou":0.8711162255466053,"lm_spill":0.0680209295167744,"lm_miss":0.06973886328725039,"a2_iou":0.8437542201215396,"a2_spill":0.125297494050119,"a2_miss":0.040245775729646695},{"name":"3249243339_0","trusted":45,"used":1,"contrast":0.161,"lm_iou":0.7540826128722382,"lm_spill":0.044430919050517347,"lm_miss":0.218516674962668,"a2_iou":0.7180348258706468,"a2_spill":0.0006924009001211701,"a2_miss":0.2816077650572424},{"name":"2286578031_0","trusted":48,"used":1,"contrast":0.214,"lm_iou":0.7242188646031978,"lm_spill":0.004637096774193548,"lm_miss":0.2733294083014424,"a2_iou":0.6351490236382322,"a2_spill":0.00391434492286438,"a2_miss":0.3632617015013247},{"name":"3540376775_0","trusted":0,"used":0,"contrast":0,"lm_iou":0.9248436748436748,"lm_spill":0.024108615657911434,"lm_miss":0.05353187300024612,"a2_iou":0.9248436748436748,"a2_spill":0.024108615657911434,"a2_miss":0.05353187300024612},{"name":"3151169662_6","trusted":43,"used":1,"contrast":0.295,"lm_iou":0.5613221509620129,"lm_spill":0.26659791156374885,"lm_miss":0.29478120738812447,"a2_iou":0.5177267058613932,"a2_spill":0.35213465611414557,"a2_miss":0.27953390355770424},{"name":"639068334_2","trusted":39,"used":1,"contrast":0.106,"lm_iou":0.7522770853307766,"lm_spill":0.05123941958887546,"lm_miss":0.21586508432229856,"a2_iou":0.76411603199236,"a2_spill":0.05492396279344456,"a2_miss":0.20037476577139288},{"name":"10539723394_1","trusted":54,"used":1,"contrast":0.318,"lm_iou":0.8294625082946251,"lm_spill":0.125017499650007,"lm_miss":0.059018367961457395,"a2_iou":0.8492836676217765,"a2_spill":0.05394190871369295,"a2_miss":0.10749774164408311},{"name":"10053066166_1","trusted":51,"used":1,"contrast":0.21,"lm_iou":0.7860499628988376,"lm_spill":0.12076359109143726,"lm_miss":0.1188132538472203,"a2_iou":0.6893167701863354,"a2_spill":0.13106796116504854,"a2_miss":0.23069457923194234},{"name":"7676512964_1","trusted":53,"used":1,"contrast":0.138,"lm_iou":0.7810085007727975,"lm_spill":0.12167300380228137,"lm_miss":0.1242417677642981,"a2_iou":0.7145464500821318,"a2_spill":0.18061950606948515,"a2_miss":0.1518630849220104},{"name":"2175743425_0","trusted":34,"used":1,"contrast":0.026,"lm_iou":0.7566474887264811,"lm_spill":0.18683155080213903,"lm_miss":0.08413325804630152,"a2_iou":0.6876456876456877,"a2_spill":0.24732897464519216,"a2_miss":0.11161302465650291},{"name":"3870166715_0","trusted":0,"used":0,"contrast":0.019,"lm_iou":0.8135007487616635,"lm_spill":0.15858453473132372,"lm_miss":0.03918367346938775,"a2_iou":0.8135007487616635,"a2_spill":0.15858453473132372,"a2_miss":0.03918367346938775},{"name":"878000664_0","trusted":34,"used":1,"contrast":0.191,"lm_iou":0.7081052445700159,"lm_spill":0.1265519494663472,"lm_miss":0.2109405745769382,"a2_iou":0.6858643326039388,"a2_spill":0.1386171265252281,"a2_miss":0.22904368358913813},{"name":"3844231836_0","trusted":50,"used":1,"contrast":0.088,"lm_iou":0.6327778627121236,"lm_spill":0.1344625679631953,"lm_miss":0.2982366904035266,"a2_iou":0.4838758746577426,"a2_spill":0.17526575058335495,"a2_miss":0.46066463207867075},{"name":"3654114898_6","trusted":48,"used":1,"contrast":0.057,"lm_iou":0.7668499607227023,"lm_spill":0.09106145251396648,"lm_miss":0.16933287950987067,"a2_iou":0.6670922438557293,"a2_spill":0.08533916849015317,"a2_miss":0.28863172226004086},{"name":"4702863791_0","trusted":33,"used":1,"contrast":0.1,"lm_iou":0.7748368382886149,"lm_spill":0.0989458889669712,"lm_miss":0.15310435931307795,"a2_iou":0.7771658060814687,"a2_spill":0.14460722404647638,"a2_miss":0.10528401585204755},{"name":"5826653421_0","trusted":0,"used":0,"contrast":0,"lm_iou":0.600834938985228,"lm_spill":0.2348691384950927,"lm_miss":0.2632891455571597,"a2_iou":0.600834938985228,"a2_spill":0.2348691384950927,"a2_miss":0.2632891455571597},{"name":"9163983599_0","trusted":46,"used":1,"contrast":0.307,"lm_iou":0.8081367924528302,"lm_spill":0.01706827309236948,"lm_miss":0.18036120081329984,"a2_iou":0.7750523134154848,"a2_spill":0.03488708743485813,"a2_miss":0.2026073436191843},{"name":"3097502052_1","trusted":37,"used":1,"contrast":0.143,"lm_iou":0.7321739130434782,"lm_spill":0.15955159705159705,"lm_miss":0.14962709757613424,"a2_iou":0.6896376995186217,"a2_spill":0.2112431179368299,"a2_miss":0.15413300186451212},{"name":"1252554152_2","trusted":59,"used":1,"contrast":0.186,"lm_iou":0.7524788391777509,"lm_spill":0.11163454675231978,"lm_miss":0.16893696581196582,"a2_iou":0.7979280781138366,"a2_spill":0.11956378925239784,"a2_miss":0.10510149572649573},{"name":"3766722833_0","trusted":52,"used":1,"contrast":0.159,"lm_iou":0.8385529847884443,"lm_spill":0.07016300496102056,"lm_miss":0.10480349344978165,"a2_iou":0.7206323563351027,"a2_spill":0.17644731636555452,"a2_miss":0.14778930131004367},{"name":"13701568953_3","trusted":41,"used":1,"contrast":0.081,"lm_iou":0.8066500415627598,"lm_spill":0.17158955096465767,"lm_miss":0.03153692614770459,"a2_iou":0.781700646444555,"a2_spill":0.17825405122843702,"a2_miss":0.058682634730538925},{"name":"11916983615_0","trusted":47,"used":1,"contrast":0.29,"lm_iou":0.7576377058489494,"lm_spill":0.050121030898476436,"lm_miss":0.210812729208565,"a2_iou":0.7574586821206267,"a2_spill":0.10917581724094409,"a2_miss":0.1650301668046847},{"name":"6910241873_0","trusted":38,"used":1,"contrast":0.268,"lm_iou":0.8277573235152873,"lm_spill":0.018413059984813972,"lm_miss":0.1591869918699187,"a2_iou":0.7778106071797902,"a2_spill":0.10520054384772264,"a2_miss":0.14390243902439023},{"name":"10539723394_3","trusted":50,"used":1,"contrast":0.291,"lm_iou":0.7149390243902439,"lm_spill":0.21141127676269478,"lm_miss":0.11553935126980136,"a2_iou":0.7303507880020336,"a2_spill":0.20752427184466019,"a2_miss":0.09693236107618808},{"name":"10178441145_0","trusted":48,"used":1,"contrast":0.269,"lm_iou":0.7729717091419219,"lm_spill":0.0811561978877154,"lm_miss":0.17038895859473024,"a2_iou":0.7618664521319388,"a2_spill":0.09932065217391305,"a2_miss":0.1682559598494354},{"name":"12558225405_2","trusted":51,"used":1,"contrast":0.158,"lm_iou":0.7207612959465349,"lm_spill":0.08603537214443625,"lm_miss":0.22677680798004987,"a2_iou":0.5862962429825824,"a2_spill":0.11533449174630755,"a2_miss":0.36518079800498754},{"name":"4004024612_0","trusted":47,"used":1,"contrast":0.14,"lm_iou":0.7634647418101055,"lm_spill":0.1317617343717112,"lm_miss":0.13648733514758216,"a2_iou":0.7303912810434161,"a2_spill":0.16707416462917685,"a2_miss":0.14423278208080384},{"name":"8174712149_0","trusted":45,"used":1,"contrast":0.174,"lm_iou":0.6104437771104437,"lm_spill":0.17627194957226475,"lm_miss":0.2978315102667434,"a2_iou":0.624210094378334,"a2_spill":0.18817376454264062,"a2_miss":0.27019765879869506},{"name":"360544361_0","trusted":0,"used":0,"contrast":0.014,"lm_iou":0.7727411013081837,"lm_spill":0.13438600477110077,"lm_miss":0.12191749250979489,"a2_iou":0.7727411013081837,"a2_spill":0.13438600477110077,"a2_miss":0.12191749250979489},{"name":"4214197228_0","trusted":44,"used":1,"contrast":0.071,"lm_iou":0.7054498269896193,"lm_spill":0.051008533747090766,"lm_miss":0.26674659073879814,"a2_iou":0.665490369063373,"a2_spill":0.02750322303394929,"a2_miss":0.32174434287426945},{"name":"5649116318_0","trusted":35,"used":1,"contrast":0.332,"lm_iou":0.782128871484514,"lm_spill":0.09476720230737536,"lm_miss":0.14811942613416051,"a2_iou":0.7715977705527172,"a2_spill":0.1163563829787234,"a2_miss":0.14113997673516868},{"name":"10014368575_2","trusted":0,"used":0,"contrast":-0.014,"lm_iou":0.6892345986309895,"lm_spill":0.20840480274442538,"lm_miss":0.15797476052911663,"a2_iou":0.6892345986309895,"a2_spill":0.20840480274442538,"a2_miss":0.15797476052911663},{"name":"3367321893_2","trusted":49,"used":1,"contrast":0.179,"lm_iou":0.7893890675241158,"lm_spill":0.11121167552890598,"lm_miss":0.12409410190656707,"a2_iou":0.7216305189775368,"a2_spill":0.15422151611438947,"a2_miss":0.16902664734084066},{"name":"3683766023_1","trusted":42,"used":1,"contrast":0.08,"lm_iou":0.7329351535836177,"lm_spill":0.07758389261744966,"lm_miss":0.21891338940668334,"a2_iou":0.7411016949152542,"a2_spill":0.0840534171249018,"a2_miss":0.20481927710843373},{"name":"566149228_0","trusted":53,"used":1,"contrast":0.086,"lm_iou":0.795932021945671,"lm_spill":0,"lm_miss":0.2040679780543289,"a2_iou":0.8548819400127633,"a2_spill":0.05127478753541077,"a2_miss":0.10370667737187207},{"name":"4156171909_0","trusted":53,"used":1,"contrast":0.447,"lm_iou":0.8207097864495314,"lm_spill":0.15581542351453856,"lm_miss":0.032772044178888286,"a2_iou":0.8023933238860022,"a2_spill":0.13977042538825118,"a2_miss":0.07731305449936629},{"name":"161784446_3","trusted":52,"used":1,"contrast":0.178,"lm_iou":0.3154867256637168,"lm_spill":0.5885747259088286,"lm_miss":0.425,"a2_iou":0.3652704623359251,"a2_spill":0.508548931383577,"a2_miss":0.4127688172043011},{"name":"10414893945_3","trusted":47,"used":1,"contrast":0.319,"lm_iou":0.7320991282201978,"lm_spill":0.1547161275729473,"lm_miss":0.1546205180409456,"a2_iou":0.7674040998579257,"a2_spill":0.11813411078717201,"a2_miss":0.1446668928854202},{"name":"10056137585_4","trusted":42,"used":1,"contrast":0.044,"lm_iou":0.7156174599692915,"lm_spill":0.22542735042735043,"lm_miss":0.0961351987809946,"a2_iou":0.6318422601530312,"a2_spill":0.3159515717926933,"a2_miss":0.10777115944036571},{"name":"8997213160_0","trusted":44,"used":1,"contrast":0.232,"lm_iou":0.7425487672046738,"lm_spill":0.0002666311158512198,"lm_miss":0.25730414974744975,"a2_iou":0.7449916115661699,"a2_spill":0.004746209624258405,"a2_miss":0.25235218381697533},{"name":"3258816215_0","trusted":42,"used":1,"contrast":0.227,"lm_iou":0.8433075325656032,"lm_spill":0.0753467191057752,"lm_miss":0.09446584228664098,"a2_iou":0.7631772945079248,"a2_spill":0.1063875701337937,"a2_miss":0.16055138860733834},{"name":"3164661571_0","trusted":48,"used":1,"contrast":0.206,"lm_iou":0.7816280982027487,"lm_spill":0.08093922651933702,"lm_miss":0.16059038728396619,"a2_iou":0.7161343939214057,"a2_spill":0.07598039215686274,"a2_miss":0.23905638955468653},{"name":"7463933_1","trusted":51,"used":1,"contrast":0.321,"lm_iou":0.7774355464293863,"lm_spill":0.07780784844384303,"lm_miss":0.16798925650103771,"a2_iou":0.7360349266763685,"a2_spill":0.1014076807434741,"a2_miss":0.197289708216335},{"name":"8256186926_1","trusted":44,"used":1,"contrast":0.1,"lm_iou":0.7175353752462834,"lm_spill":0.09407507914970602,"lm_miss":0.22469518095606736,"a2_iou":0.7108517679846716,"a2_spill":0.12330827067669173,"a2_miss":0.21017998838784593},{"name":"3936802280_0","trusted":0,"used":0,"contrast":0,"lm_iou":0.8923318577752392,"lm_spill":0.04784397379247295,"lm_miss":0.06577963821198983,"a2_iou":0.8923318577752392,"a2_spill":0.04784397379247295,"a2_miss":0.06577963821198983},{"name":"878994845_0","trusted":50,"used":1,"contrast":0.258,"lm_iou":0.8798462031400193,"lm_spill":0.0034476501542369804,"lm_miss":0.11746745942471477,"a2_iou":0.8018433179723502,"a2_spill":0.013682564503518374,"a2_miss":0.1891370721516953},{"name":"9206542346_2","trusted":46,"used":1,"contrast":0.204,"lm_iou":0.7248950912462184,"lm_spill":0.0577191424584549,"lm_miss":0.24142156862745098,"a2_iou":0.6735056399324985,"a2_spill":0.16209944751381217,"a2_miss":0.2255923202614379},{"name":"286655090_6","trusted":46,"used":1,"contrast":0.124,"lm_iou":0.7004953219592736,"lm_spill":0.29170840289371175,"lm_miss":0.01547029702970297,"a2_iou":0.5970387030268953,"a2_spill":0.39771223293628283,"a2_miss":0.014387376237623763},{"name":"197831692_0","trusted":43,"used":1,"contrast":0.14,"lm_iou":0.8212703101920237,"lm_spill":0.13076493579006143,"lm_miss":0.06295895028289394,"a2_iou":0.7207146952035162,"a2_spill":0.2225314368171511,"a2_miss":0.09197062718189479},{"name":"2437377281_1","trusted":50,"used":1,"contrast":0.276,"lm_iou":0.7284323598522995,"lm_spill":0.05364151766245094,"lm_miss":0.24019607843137256,"a2_iou":0.6919696803251675,"a2_spill":0.07828504536142815,"a2_miss":0.26482259570494865},{"name":"7283475126_1","trusted":37,"used":1,"contrast":0.078,"lm_iou":0.6992355025172479,"lm_spill":0.0990990990990991,"lm_miss":0.2425007574992425,"a2_iou":0.7057137573964497,"a2_spill":0.107042583060365,"a2_miss":0.22906777093222908},{"name":"2832365922_0","trusted":46,"used":1,"contrast":0.171,"lm_iou":0.796941219826792,"lm_spill":0.05814459930313589,"lm_miss":0.1618217054263566,"a2_iou":0.6640677966101695,"a2_spill":0.158866466294547,"a2_miss":0.24069767441860465},{"name":"977921095_2","trusted":31,"used":1,"contrast":0.109,"lm_iou":0.7332766784023309,"lm_spill":0.09675489756243458,"lm_miss":0.20421607378129117,"a2_iou":0.7555877733478313,"a2_spill":0.09897709263794842,"a2_miss":0.17602108036890646},{"name":"8119404689_0","trusted":52,"used":1,"contrast":0.216,"lm_iou":0.82627221816411,"lm_spill":0.016091620759640476,"lm_miss":0.16240898432679254,"a2_iou":0.7164583824569677,"a2_spill":0.05870508054522924,"a2_miss":0.2500308527705788},{"name":"7293408162_0","trusted":54,"used":1,"contrast":0.229,"lm_iou":0.7974099434355463,"lm_spill":0.13999036763525446,"lm_miss":0.08364693807731782,"a2_iou":0.7333333333333333,"a2_spill":0.1723912332351979,"a2_miss":0.13445090660280534},{"name":"2885235310_1","trusted":50,"used":1,"contrast":0.173,"lm_iou":0.6091301665638494,"lm_spill":0.19330065359477125,"lm_miss":0.28676683039583933,"a2_iou":0.6514293241997102,"a2_spill":0.11916636978981118,"a2_miss":0.28561109505923143},{"name":"8035335232_3","trusted":37,"used":1,"contrast":0.055,"lm_iou":0.8170954356846473,"lm_spill":0.07375352775164629,"lm_miss":0.12604296112195987,"a2_iou":0.7396146899458158,"a2_spill":0.17063291139240505,"a2_miss":0.12764068879815374},{"name":"5451029495_0","trusted":51,"used":1,"contrast":0.189,"lm_iou":0.7745918507339827,"lm_spill":0.13404907975460123,"lm_miss":0.11987529228371005,"a2_iou":0.6952199373553044,"a2_spill":0.1538206530747555,"a2_miss":0.20420888542478566},{"name":"186024872_4","trusted":0,"used":0,"contrast":0.002,"lm_iou":0.6946853663037461,"lm_spill":0.22196961868347628,"lm_miss":0.1336018411967779,"a2_iou":0.6946853663037461,"a2_spill":0.22196961868347628,"a2_miss":0.1336018411967779},{"name":"5424600245_4","trusted":27,"used":1,"contrast":0.077,"lm_iou":0.5296828908554573,"lm_spill":0.35365579302587175,"lm_miss":0.25415368639667707,"a2_iou":0.4902062749176634,"a2_spill":0.40400421496311906,"a2_miss":0.26583592938733125},{"name":"8653982464_7","trusted":54,"used":1,"contrast":0.305,"lm_iou":0.6616509028374893,"lm_spill":0.11296829971181556,"lm_miss":0.2774647887323944,"a2_iou":0.5828877005347594,"a2_spill":0.11595791319596668,"a2_miss":0.36885758998435053},{"name":"11261275953_2","trusted":47,"used":1,"contrast":0.237,"lm_iou":0.7784409257003654,"lm_spill":0.16501175855761693,"lm_miss":0.08003454728659853,"a2_iou":0.7162193698949825,"a2_spill":0.20912253575570158,"a2_miss":0.11645314524255074},{"name":"10036529425_0","trusted":47,"used":1,"contrast":0.164,"lm_iou":0.7149425287356321,"lm_spill":0.0010706638115631692,"lm_miss":0.28450920245398775,"a2_iou":0.6346227499042513,"a2_spill":0.0018072289156626507,"a2_miss":0.36464723926380366},{"name":"390947043_1","trusted":41,"used":1,"contrast":0.21,"lm_iou":0.7834829897559125,"lm_spill":0,"lm_miss":0.2165170102440875,"a2_iou":0.7711713845789412,"a2_spill":0.07606073506456648,"a2_miss":0.17655242190464146},{"name":"11366688994_3","trusted":38,"used":1,"contrast":0.146,"lm_iou":0.7946496263403011,"lm_spill":0.15666666666666668,"lm_miss":0.06772554002541296,"a2_iou":0.749165623696287,"a2_spill":0.19301202112122234,"a2_miss":0.08729351969504447},{"name":"2090021659_0","trusted":39,"used":1,"contrast":0.08,"lm_iou":0.6800877674163467,"lm_spill":0.16691304932132778,"lm_miss":0.21262542868029977,"a2_iou":0.6496522204387373,"a2_spill":0.19514781917009147,"a2_miss":0.22888352597485076},{"name":"8246132167_0","trusted":42,"used":1,"contrast":0.134,"lm_iou":0.6679205537165213,"lm_spill":0.257071129707113,"lm_miss":0.13131115459882584,"a2_iou":0.6659519068770102,"a2_spill":0.2460551413213109,"a2_miss":0.149119373776908},{"name":"5225361378_0","trusted":39,"used":1,"contrast":0.152,"lm_iou":0.872161480235492,"lm_spill":0.04511970534069982,"lm_miss":0.09035087719298246,"a2_iou":0.75671834625323,"a2_spill":0.133195204972621,"a2_miss":0.14371345029239765},{"name":"9136354430_0","trusted":39,"used":1,"contrast":0.2,"lm_iou":0.7021276595744681,"lm_spill":0.15989280928986155,"lm_miss":0.1895734597156398,"a2_iou":0.7441184740837942,"a2_spill":0.14854139854139853,"a2_miss":0.1448728996122361},{"name":"3623130960_2","trusted":53,"used":1,"contrast":0.251,"lm_iou":0.8045489171835891,"lm_spill":0.07228008533065629,"lm_miss":0.14164634854290026,"a2_iou":0.7822679153094463,"a2_spill":0.13612859712230216,"a2_miss":0.10774410774410774},{"name":"487604596_0","trusted":55,"used":1,"contrast":0.171,"lm_iou":0.7825520833333334,"lm_spill":0.10268745852687458,"lm_miss":0.1404735420308279,"a2_iou":0.7282461371645432,"a2_spill":0.16800867141529885,"a2_miss":0.1461941840139838},{"name":"2173322054_0","trusted":45,"used":1,"contrast":0.09,"lm_iou":0.4960605592460992,"lm_spill":0.39000759878419455,"lm_miss":0.2735294117647059,"a2_iou":0.5211491011632006,"a2_spill":0.29779149845642366,"a2_miss":0.33099547511312216},{"name":"9598434496_0","trusted":50,"used":1,"contrast":0.187,"lm_iou":0.7520206161415017,"lm_spill":0.067673540516991,"lm_miss":0.20455953413455583,"a2_iou":0.6558765518041536,"a2_spill":0.08837284308982422,"a2_miss":0.29959112873249905},{"name":"4865261401_0","trusted":41,"used":1,"contrast":0.3,"lm_iou":0.8098081795150199,"lm_spill":0.1613568215892054,"lm_miss":0.04072883172561629,"a2_iou":0.734816384180791,"a2_spill":0.19356713815152102,"a2_miss":0.10782422293676314}]</pre></body></html>

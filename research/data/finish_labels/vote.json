@@ -1,0 +1,37 @@
+{
+  "votes": {
+    "blush:matte": {
+      "spread": "wide",
+      "sheen": "dull",
+      "particles": "none"
+    },
+    "blush:glossy": {
+      "spread": "tight",
+      "sheen": "wet",
+      "particles": "none"
+    },
+    "eyeliner:matte": {
+      "spread": "wide",
+      "sheen": "dull",
+      "particles": "none"
+    },
+    "eyeliner:glossy": {
+      "spread": "tight",
+      "sheen": "wet",
+      "particles": "none"
+    },
+    "eyeshadow:matte": {
+      "spread": "unknown",
+      "sheen": "dull",
+      "particles": "none"
+    },
+    "eyeshadow:shimmer": {
+      "spread": "unknown",
+      "sheen": "wet",
+      "particles": "chunky"
+    }
+  },
+  "mismatches": [],
+  "tuningAdvice": [],
+  "changeTuning": false
+}

@@ -1,0 +1,25 @@
+frames,155
+fps,30.0
+size,720x880
+mouth_px,106.7
+filter,minCutoff 1.5 beta 25.0 dCutoff 2.0 (read from the page)
+lost_rate,0.0
+lost_longest_run,0
+still_frames,56
+jitter_rel_raw_median,0.006362051937659319
+jitter_rel_raw_p95,0.014542875958258122
+jitter_shape_raw_median,0.002665875023923926
+jitter_shape_raw_p95,0.008888034807641717
+lip_iou_t_raw_median_all,0.8686513373821003
+lip_iou_t_raw_p05_all,0.4265791569644089
+lip_iou_t_raw_median_still,0.9472733373604507
+jitter_rel_smoothed_median,0.006257124905205358
+jitter_rel_smoothed_p95,0.013851222874514027
+jitter_shape_smoothed_median,0.002028305641804342
+jitter_shape_smoothed_p95,0.008770901151487865
+lip_iou_t_smoothed_median_all,0.8767412067010416
+lip_iou_t_smoothed_p05_all,0.41180711241517515
+lip_iou_t_smoothed_median_still,0.9427199621463753
+trail_rel_max,0.08090141364863614
+trail_rel_p95,0.034189346176092636
+lag_frames,0.0

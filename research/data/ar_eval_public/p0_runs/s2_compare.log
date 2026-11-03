@@ -1,0 +1,10 @@
+WARNING: Logging before InitGoogle() is written to STDERR
+W0000 00:00:1793614535.490419   24092 face_landmarker_graph.cc:180] Sets FaceBlendshapesGraph acceleration to xnnpack by default.
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1793614535.499282   12984 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1793614535.513543    1920 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+20 applied photos, max side 1280px ¡æ research\data\ar_eval_public\p0_runs\s2_compare.csv
+method       n     dE¡é  dL_spread¡é   dL_hi¡é   ssim¡è
+bare        20    7.12        3.50     6.99   0.708
+ar          20    4.08        4.67     4.92   0.700
+(median per method; dE = CIEDE2000 of mean lip color, the rest on L*)

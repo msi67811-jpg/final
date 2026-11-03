@@ -1,0 +1,13 @@
+{
+  "n": 17,
+  "skipped": [
+    "no hand masks in research/data/liner/gt"
+  ],
+  "hand_iou_mean": null,
+  "hand_spill_mean": null,
+  "rim_iou_mean": 0.0675701846973955,
+  "rim_spill_mean": 0.734686160083165,
+  "lapa_spill_mean": 0.6903805050307605,
+  "bisenet_inside_mean": 0.42472213153465976,
+  "note": "Stroke uses MediaPipe eyelid points. BiSeNet eye class is the whole eye, not a liner stroke."
+}
