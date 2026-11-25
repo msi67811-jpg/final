@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>VISHUE AR 개발 발전 현황</title>
+<style>
+@page { size: 297mm 210mm; margin: 0; }
+:root { --pink:#E8577A; --rose:#B23A5A; --plum:#4A3540; --ink:#2B2228; --mute:#7A6C73; --line:#E6DDE1; --soft:#FBF1F4; --soft2:#F5F2F3; --ok:#2E8B57; --warn:#C77A12; --bad:#B8323A; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #fff; color: var(--ink); font-family: "Malgun Gothic", "Noto Sans KR", sans-serif; font-size: 9.6pt; line-height: 1.42; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width: 297mm; height: 210mm; padding: 11mm 13mm 12mm; position: relative; overflow: hidden; page-break-after: always; }
+.page:last-child { page-break-after: auto; }
+.hd { display: flex; align-items: baseline; gap: 10px; border-bottom: 2px solid var(--pink); padding-bottom: 4px; margin-bottom: 7px; }
+.hd .no { color: var(--pink); font-weight: 700; font-size: 15pt; }
+.hd h2 { margin: 0; font-size: 15pt; color: var(--plum); }
+.hd .sub { margin-left: auto; color: var(--mute); font-size: 8.6pt; }
+.lead { margin: 0 0 7px; font-size: 10pt; color: var(--plum); }
+.ft { position: absolute; left: 13mm; right: 13mm; bottom: 5.5mm; display: flex; justify-content: space-between; font-size: 7.4pt; color: var(--mute); border-top: 1px solid var(--line); padding-top: 2px; }
+h3 { margin: 0 0 4px; font-size: 10.6pt; color: var(--rose); }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid var(--line); padding: 3px 5px; vertical-align: top; text-align: left; }
+th { background: var(--soft); color: var(--plum); font-weight: 700; }
+.t-sm th, .t-sm td { font-size: 8.3pt; padding: 2.5px 4px; line-height: 1.33; }
+.t-xs th, .t-xs td { font-size: 7.7pt; padding: 2px 3.5px; line-height: 1.3; }
+.cols { display: flex; gap: 9px; }
+.c { flex: 1; min-width: 0; }
+.box { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: #fff; }
+.soft { background: var(--soft2); }
+.pinkbox { background: var(--soft); border-color: #F2C9D5; }
+figure { margin: 0; }
+figure img { display: block; width: 100%; height: auto; border-radius: 3px; }
+figcaption { font-size: 7.6pt; color: var(--mute); margin-top: 2px; line-height: 1.3; }
+figcaption b { color: var(--plum); }
+.tag { display: inline-block; font-size: 7.4pt; padding: 0 5px; border-radius: 8px; font-weight: 700; white-space: nowrap; }
+.ok { background: #E3F3EA; color: var(--ok); } .lim { background: #FDF0DC; color: var(--warn); } .off { background: #EEE; color: #666; } .no { background: #F9E1E3; color: var(--bad); } .unk { background: #E8E6F4; color: #5A4E9A; }
+.p1 { background: #F9E1E3; color: var(--bad); } .p2 { background: #FDF0DC; color: var(--warn); } .p3 { background: #EEE; color: #555; }
+.note { font-size: 7.8pt; color: var(--mute); }
+.warnline { font-size: 8pt; color: var(--bad); }
+code, .mono { font-family: Consolas, "Malgun Gothic", monospace; font-size: 8pt; color: #6B2E45; }
+ul { margin: 2px 0 0 0; padding-left: 15px; } li { margin: 1px 0; }
+.kpi { display: flex; gap: 7px; }
+.kpi .k { flex: 1; border-radius: 6px; padding: 6px 8px; background: var(--soft); border: 1px solid #F2C9D5; }
+.kpi .k b { display: block; color: var(--rose); font-size: 13pt; line-height: 1.15; }
+.kpi .k span { font-size: 8pt; color: var(--plum); }
+/* diagram */
+.flow { display: flex; align-items: stretch; gap: 0; }
+.node { border: 1.5px solid var(--pink); border-radius: 7px; background: #fff; padding: 5px 6px; font-size: 8.2pt; line-height: 1.3; flex: 1; min-width: 0; }
+.node.dark { border-color: var(--plum); }
+.node.gray { border-color: #A99CA3; background: var(--soft2); }
+.node .t { font-weight: 700; color: var(--plum); font-size: 8.8pt; margin-bottom: 2px; }
+.node .f { font-family: Consolas, monospace; font-size: 7.3pt; color: #6B2E45; }
+.arrow { flex: 0 0 15px; display: flex; align-items: center; justify-content: center; color: var(--pink); font-size: 13pt; font-weight: 700; }
+.varrow { text-align: center; color: var(--pink); font-size: 12pt; line-height: 1; margin: 1px 0; font-weight: 700; }
+.lane { border: 1px dashed #D9C6CE; border-radius: 8px; padding: 5px 6px 6px; position: relative; }
+.lane .lt { font-size: 8pt; font-weight: 700; color: var(--rose); margin-bottom: 3px; }
+.strip { display: flex; gap: 5px; }
+.strip figure { flex: 1; min-width: 0; }
+.cover h1 { font-size: 25pt; color: var(--plum); margin: 2mm 0 1mm; letter-spacing: -0.5px; }
+.cover .brand { color: var(--pink); font-weight: 700; letter-spacing: 3px; font-size: 11pt; }
+.small { font-size: 8.2pt; }
+.right { text-align: right; }
+.center { text-align: center; }
+.strip.tl figure img { height: 78mm; width: 100%; object-fit: contain; background: #F5F2F3; }
+</style></head><body>
+<!-- P1 -->
+<section class="page cover">
+  <div class="brand">VISHUE · AR 파트 기술 보고서</div>
+  <h1>VISHUE AR 가상 메이크업 개발 발전 현황</h1>
+  <div style="color:var(--mute);font-size:9pt;margin-bottom:4mm">조사 기준일 2026-11-24 · 소스 <span class="mono">feat/ar-lighting-lip-finish</span> 커밋 <span class="mono">4c4262e7</span>(11-23, 앱 코드 작업 트리 변경 없음) · 첫 AR 커밋 <span class="mono">5bfa7f68</span>(10-25)</div>
+  <div class="cols">
+    <div class="c" style="flex:0 0 92mm">
+      <div class="strip">
+        <figure><img src="assets/face_matte.jpg"><figcaption><b>매트</b></figcaption></figure>
+        <figure><img src="assets/stage3.jpg"><figcaption><b>새틴</b></figcaption></figure>
+        <figure><img src="assets/face_glossy.jpg"><figcaption><b>글로시</b></figcaption></figure>
+      </div>
+      <p class="note" style="margin-top:2px"><b>그림 1</b> 최신 AR 실기기 화면(Galaxy, 2026-11-23 캡처). 출처 <span class="mono">G:/내 드라이브/ppt/발전도/매트·새틴·글로시찐.jpg</span>. 이 캡처에서 나온 문제(매트 서리 무늬, 윗입술 띠)를 고친 11-23 D안은 폰 재확인 전입니다.</p>
+      <div class="box pinkbox" style="margin-top:4px"><h3>AR 개발 목적</h3>
+        휴대폰 전면 카메라의 내 얼굴에 <b>실제 판매 제품의 색과 제형</b>을 실시간으로 입혀, 사기 전에 "나에게 어떻게 보이는지" 확인하게 합니다. 얼굴 영상은 기기 밖으로 보내지 않고 WebView 안에서 모두 계산합니다(Expo Go, 네이티브 모듈 없음).</div>
+    </div>
+    <div class="c">
+      <table class="t-sm" style="margin-bottom:5px"><tr><th style="width:22%">얼굴 추적</th><td>MediaPipe Tasks Vision 1.1.1 <b>Face Landmarker</b> 478점 3D (GPU→CPU 대체)</td></tr>
+        <tr><th>영역 분할</th><td>MediaPipe <b>Image Segmenter</b> selfie multiclass 256 — 배경·피부·머리·가림</td></tr>
+        <tr><th>렌더링</th><td>자체 <b>WebGL + GLSL</b>, 468점 UV 메시 · <span class="mono">components/ar/faceTrackerHtml.ts</span>(7,197줄)</td></tr>
+        <tr><th>앱</th><td>Expo SDK 58 · React Native WebView · Zustand(<span class="mono">store/makeupStore.ts</span>)</td></tr>
+        <tr><th>현재 수준</th><td>AR 패널 <b>8부위</b>(립·블러셔·섀도·아이라인·하이라이터·쉐딩·눈썹·파운데이션) + 마스카라(룩 전용). 립 <b>제형 7종 + 립오일·밤</b>. 조명 <b>통제·보정·안내 3단계</b></td></tr></table>
+      <h3>현재까지의 핵심 성과</h3>
+      <table class="t-xs">
+        <tr><th style="width:27%">성과</th><th>근거</th></tr>
+        <tr><td><b>스티커 → 바른 입술</b></td><td>10-22 "2D 스티커 느낌" → 10-23 층 쌓기(맨입술 색만 교체, 주름·조명은 카메라 원본) <span class="tag ok">실기기</span></td></tr>
+        <tr><td><b>늦게 따라오던 화장 해결</b></td><td>같은 프레임에 그리기, 흔들림 모의 최대 오차 20.8→2.2 px, 깜빡임 6.2→1.2 px</td></tr>
+        <tr><td><b>제형을 셰이더 안으로</b></td><td>11-12엔 PC 후처리로만 낸 벨벳·크림 질감을 앱 값으로 재현, 매트 제품색 ΔE 8.7→1.5 <span class="tag lim">헤드리스</span></td></tr>
+        <tr><td><b>조명 대응 3단계</b></td><td>옆빛 방향 오차 14.7→6.6°, 어두운 피부 저조도 화장 뜸 1.96~2.57→1.01~1.27배, 안내 0→8조건</td></tr>
+        <tr><td><b>근거 있는 기술 선택</b></td><td>얼굴 추적 5종·상용 SDK 3종을 폰에서, 생성 모델 3종을 실제 생성·평가 → 실시간은 자체 AR 유지</td></tr>
+      </table>
+      <p class="note" style="margin-top:3px"><span class="tag ok">실기기</span> 폰 캡처·HUD로 확인 · <span class="tag lim">헤드리스</span> PC에서 앱 코드를 돌린 오프라인 렌더. 수치는 기존 자료 값을 옮긴 것이며 새로 측정하지 않았습니다. 다른 기기·조건의 수치끼리는 순위를 매기지 않았습니다.</p>
+    </div>
+  </div>
+  <div class="ft"><span>VISHUE AR 개발 발전 현황 · 얼굴 사진 포함 — 팀·멘토 공유용, Git·외부 업로드 금지</span><span>1 / 17</span></div>
+</section>
+
+<!-- P2 -->
+<section class="page">
+  <div class="hd"><span class="no">02</span><h2>초기부터 현재까지 발전 타임라인</h2><span class="sub">날짜 근거: 카카오톡 파일명·저장 시각, Git 커밋, <span class="mono">docs/AR_PROGRESS.md</span></span></div>
+  <div class="strip tl" style="margin-bottom:5px">
+    <figure><img src="assets/stage1.jpg"><figcaption><b>10-22</b> 불투명 단색 덮기(스티커) <span class="mono">입술2.jpg</span></figcaption></figure>
+    <figure><img src="assets/tl_1023.jpg"><figcaption><b>10-23</b> 층 쌓기 첫날 <span class="mono">KakaoTalk_20261023_091529383_02</span></figcaption></figure>
+    <figure><img src="assets/tl_1025.jpg"><figcaption><b>10-25</b> 메시+UV 렌더 첫 커밋 <span class="mono">…20261025_181616182_02</span></figcaption></figure>
+    <figure><img src="assets/tl_1030.jpg"><figcaption><b>10-30</b> 부위 확장(섀도·립 점검 HUD) <span class="mono">…20261030_132409867</span></figcaption></figure>
+    <figure><img src="assets/tl_1117.jpg"><figcaption><b>11-17</b> 제형 C안 이후 <span class="mono">…20261117_093658060_01</span></figcaption></figure>
+  </div>
+  <p class="note" style="margin:0 0 5px"><b>그림 2</b> 같은 사람·Galaxy 실기기. 날짜마다 조명·색·제품이 달라 <b>모습 비교이며 정량 비교가 아닙니다</b>. 얼굴 영역은 MediaPipe로 자동 자름(원본 비율 유지). 모든 원본은 <span class="mono">G:/내 드라이브/ppt/발전도/</span>.</p>
+  <table class="t-xs">
+    <tr><th style="width:11%">시기</th><th style="width:15%">단계</th><th>무엇을 바꿨나</th><th style="width:30%">결과 · 근거</th></tr>
+    <tr><td>10-21~23</td><td>기본 만들기</td><td>같은 프레임 업로드→점 찾기→그리기. 립 층 쌓기, 화이트밸런스 고정. 10-23 하루 Galaxy로 4번 찍고 고침</td><td>"늦게 따라옴·스티커" 해소 <span class="tag ok">실기기</span>, HUD FPS 23→14(기능 증가)</td></tr>
+    <tr><td>10-25~29</td><td>부위 늘리기</td><td>468점 UV 메시 렌더(첫 커밋 10-25), 아이라인·눈썹·블러셔·파운데이션, 아이라인 6종</td><td>눈썹 "스티커 같다" 3번 수정 → 카메라 털 명암 유지 방식</td></tr>
+    <tr><td>10-30~11-05</td><td>다듬기·재기</td><td>실제 바른 사진과 반반 비교, 블라인드 설문(5명), 광택 축소, 치아 가드, 가림 처리, 후보 조명 맞추기</td><td>설문 "입술 어색" 100%, 치아 칠 25→1%, 입술 위치 F1 0.840(기준 0.887 미달)</td></tr>
+    <tr><td>11-06~17</td><td>룩·제형</td><td>쉐딩 재구현, 시연·영상 룩, 제형 C안(Overlay·detail 셰이더 내재화), 섀도 6마감</td><td>벨벳·크림 질감을 앱에서 재현 <span class="tag lim">헤드리스</span></td></tr>
+    <tr><td>11-19~23</td><td>환경·검증</td><td>조명 3단계(1,000장 재현 실험), 생성 모델 3종 비교, 립 제형 D안(커밋 <span class="mono">38b1d52d</span>)</td><td>폰 캡처 1차(조명 4종), D안 폰 확인은 남음</td></tr>
+  </table>
+  <p class="note" style="margin-top:3px">출처: <span class="mono">VISHUE_AR_변천사_11-05갱신.pdf</span>, <span class="mono">docs/AR_PROGRESS.md</span>, Git 로그(<span class="mono">faceTrackerHtml.ts</span> 커밋 30개). <b>자료 차이:</b> <span class="mono">AR_PROGRESS.md</span> 상단 마일스톤 표는 M2~M21이 모두 "대기"로 남아 실제 구현과 맞지 않습니다(표 갱신 누락) — 이 보고서는 코드와 일자별 기록을 따랐습니다.</p>
+  <div class="ft"><span>02 발전 타임라인 · 그림 2 · 표 1</span><span>2 / 17</span></div>
+</section>
+
+<!-- P3 -->
+<section class="page">
+  <div class="hd"><span class="no">03</span><h2>얼굴 추적과 AR 구현 구조</h2><span class="sub">함수 이름은 <span class="mono">components/ar/faceTrackerHtml.ts</span> 기준 (코드에서 확인)</span></div>
+  <div class="lane" style="margin-bottom:4px"><div class="lt">앱 층 (React Native) — 사용자 동작 시에만</div>
+    <div class="flow">
+      <div class="node gray"><div class="t">AR 화면</div><span class="f">app/(tabs)/ar.tsx</span> 부위 휠·제형 칩·진하기</div><div class="arrow">→</div>
+      <div class="node gray"><div class="t">메이크업 상태</div><span class="f">makeupStore</span> 부위별 hex·texture·intensity</div><div class="arrow">→</div>
+      <div class="node gray"><div class="t">WebView 호스트</div><span class="f">ArFaceView.tsx</span> <span class="f">window.__kb.receive({type:'makeup'})</span></div><div class="arrow">⇄</div>
+      <div class="node gray"><div class="t">결과 수신</div>status·env·skin_tone·render_result, 안내 규칙 <span class="f">lib/arEnv.ts</span></div>
+    </div></div>
+  <div class="varrow">↓ JSON 메시지만 오감 · 얼굴 영상은 앱·서버로 나가지 않음</div>
+  <div class="lane" style="border-color:#E8577A;margin-bottom:4px"><div class="lt">실시간 루프 — 카메라 프레임마다 (<span class="mono">requestVideoFrameCallback</span> → <span class="mono">processFrame</span>)</div>
+    <div class="flow">
+      <div class="node"><div class="t">① 카메라</div><span class="f">openFrontCamera</span> 전면 720(최대 960)</div><div class="arrow">→</div>
+      <div class="node"><div class="t">② 같은 프레임 업로드</div><span class="f">renderer.upload()</span> 먼저 → 화장이 안 뒤처짐</div><div class="arrow">→</div>
+      <div class="node"><div class="t">③ MediaPipe</div><span class="f">detectForVideo</span> 478점</div><div class="arrow">→</div>
+      <div class="node"><div class="t">④ 안정화</div><span class="f">filterLandmarks</span> One Euro·자세 기반, 깜빡임 <span class="f">readBlink</span></div><div class="arrow">→</div>
+      <div class="node"><div class="t">⑤ UV 메시</div><span class="f">updateMesh</span>, 입술 <span class="f">measureLipInner·Edge</span>, 외곽 <span class="f">drawLipOutline</span></div><div class="arrow">→</div>
+      <div class="node"><div class="t">⑥ WebGL 렌더</div>배경 패스 + 메시 패스: 층 쌓기 발색·제형 광택(<span class="f">MATERIALS</span>)</div>
+    </div></div>
+  <div class="lane" style="border-color:#4A3540"><div class="lt">주기 작업 — 0.5~2초마다, 결과는 매 프레임 부드럽게 이어 씀 (<span class="mono">TUNING</span>)</div>
+    <div class="flow">
+      <div class="node dark"><div class="t">조명 ① 통제</div>배경 색이 안정되면 WB 잠금 <span class="f">tryLockWhiteBalance</span>, 잠금 직후 1.5 s 판정 보류</div><div class="arrow">→</div>
+      <div class="node dark"><div class="t">조명 ② 보정 (0.5 s, 정지 1.5 s)</div>조명 색 Gray World 25%+Gray-Edge 75%, 빛 방향 후보 38개 <span class="f">matchLight</span>, 노출 <span class="f">exposureFor</span> → 셰이더</div><div class="arrow">→</div>
+      <div class="node dark"><div class="t">조명 ③ 안내 (0.5 s)</div><span class="f">envEvaluate</span> 8조건 → 앱 'env' → 한 번에 1문장</div><div class="arrow">·</div>
+      <div class="node dark"><div class="t">분할 마스크 (2 s / 약 0.4 s)</div><span class="f">runSegmenter</span>: 배경 색, 얼굴 피부(파운데이션), 손·머리 가림</div>
+    </div></div>
+  <div class="cols" style="margin-top:5px">
+    <div class="c box soft small"><b>왜 이 구조인가.</b> ① 부위 마스크는 <b>UV 공간에 한 번</b> 그려 두고(<span class="mono">paintMasks</span>) 메시가 얼굴을 따라가므로 고개를 돌려도 입술·볼에 붙어 있습니다. ② 입술 외곽만 매 프레임 화면 좌표로 다시 그려 메시 삼각형 꺾임을 없앱니다. ③ 립은 "카메라 픽셀 = 빛 × 명암 × 맨입술 색"으로 보고 <b>맨입술 색만 립스틱 층으로 바꿔</b> 주름·그늘을 살립니다(<span class="mono">AR_SPEC</span> 6-5-3).</div>
+    <div class="c box small"><b>선택 근거.</b> 학습 모델은 MediaPipe 두 개뿐이고 나머지는 셰이더 계산식입니다. iOS 폰에서 추적 5종을 돌려 본 결과 3D 메시를 주는 것은 MediaPipe뿐(평균 57 ms)이었고, BiSeNet은 입술 F1이 더 낮고(0.714 vs 0.736) 폰에서 890 ms라 평가용으로만 씁니다. 모델은 시작할 때 CDN에서 받습니다.</div>
+    <div class="c box small"><b>분석과 안내 분리.</b> 조명 보정(색 계산)은 안내 판정 결과를 읽지 않습니다. 안내 기준을 바꾸거나 문구가 잘못 떠도 화장 색은 바뀌지 않습니다. 조명 작업 상세: <span class="mono">VISHUE_AR_조명대응_구조_변경_근거.pdf</span>(11-20), 7쪽 검증 결과.</div>
+  </div>
+  <div class="ft"><span>03 구조 · 그림 3 앱 층 · 실시간 루프 · 주기 작업 (별도 PNG <span class="mono">fig_architecture.png</span>)</span><span>3 / 17</span></div>
+</section>
+
+<!-- P4 -->
+<section class="page">
+  <div class="hd"><span class="no">04</span><h2>입술 경계·그림자 개선 과정</h2><span class="sub">위: 실기기 입술 확대(조건 다름) · 아래: 같은 맨얼굴·같은 색(#DD5A59) 헤드리스 전후 비교</span></div>
+  <div class="strip" style="margin-bottom:3px">
+    <figure><img src="assets/lip_1022.jpg"><figcaption><b>10-22</b> 경계까지 같은 밝기, 그늘 없음</figcaption></figure>
+    <figure><img src="assets/lip_1023.jpg"><figcaption><b>10-23</b> 층 쌓기 첫날, 진한 면</figcaption></figure>
+    <figure><img src="assets/lip_1025.jpg"><figcaption><b>10-25</b> 맨입술 명암이 비침</figcaption></figure>
+    <figure><img src="assets/lip_1105.jpg"><figcaption><b>11-05 문제</b> 벌린 입에서 치아로 번짐</figcaption></figure>
+    <figure><img src="assets/lip_1117.jpg"><figcaption><b>11-17</b> C안 이후 경계</figcaption></figure>
+  </div>
+  <p class="note" style="margin:0 0 4px"><b>그림 4</b> Galaxy 실기기 입술 확대(MediaPipe 입술 점 기준 자동 자름). 출처 <span class="mono">발전도/입술2.jpg, KakaoTalk_20261023_091529383_02, …1025_181616182_02, 입침범.jpg, …1117_093658060_01</span></p>
+  <div class="cols">
+    <figure class="c"><img src="assets/abc_upper.jpg"><figcaption><b>그림 5</b> 윗입술 확대 비교(11-13, 현재 AR vs A/B/C안). 윗입술 위 "선"의 원인은 외곽이 아니라 위아래 입술 틈 깊이 차이 → C안 채택(사용자 승인). <span class="mono">lip_ABC/png/imgD_upper_zoom.png</span> <span class="tag lim">헤드리스</span></figcaption></figure>
+    <figure class="c"><img src="assets/edge_feather.jpg"><figcaption><b>그림 6</b> 바깥 경계 흐림 전후(11-13). 흐림 폭을 입술 두께에 비례시켜 얇은 입술의 번짐 감소. <span class="mono">lip_edge_matte/edge_feather_compare.png</span> <span class="tag lim">헤드리스</span></figcaption></figure>
+    <div class="c" style="flex:0.85"><table class="t-xs">
+      <tr><th style="width:30%">문제</th><th>바꾼 방법 · 결과</th></tr>
+      <tr><td>측면 톱니, 입술 사이 점선</td><td>경계 판정을 UV에 누적, 다문 입 처리, 경계 띠 8→5 px(10-23)</td></tr>
+      <tr><td>벌린 입 안쪽 미칠, 바깥 붉은 띠</td><td>벌림 정도에 따라 안쪽 선 이동(LaPa 벌린 입 1,132장 근거, 10-25)</td></tr>
+      <tr><td>안쪽으로 갈수록 연함</td><td>농도 그라데이션 제거(풀립, 10-27)</td></tr>
+      <tr><td>치아가 빨갛게 칠해짐</td><td>맨입술보다 덜 붉고 밝은 곳 제외: 치아 칠 25→1%(정지 5장×3색, 11-03). 크림 입안 칠 18.3→14.3%(11-04)</td></tr>
+      <tr><td>손·컵이 가린 곳 위에 립</td><td>분할 마스크로 가린 부위만 칠 줄임(11-04)</td></tr>
+      <tr><td>윗입술 선·흔들림</td><td>틈 깊이 맞춤(11-13), 경계 흔들림 안정화(11-15)</td></tr>
+    </table></div>
+  </div>
+  <div class="ft"><span>04 경계·그림자 · 그림 4~6 · 표 2 (출처 변천사 4~10쪽, AR_PROGRESS)</span><span>4 / 17</span></div>
+</section>
+
+<!-- P5 -->
+<section class="page">
+  <div class="hd"><span class="no">05</span><h2>메이크업 질감·광택 발전 — Matte / Satin / Glossy</h2><span class="sub">원칙: 제품 색 값은 바꾸지 않고 명암·결·반사로 제형을 표현</span></div>
+  <div class="cols">
+    <div class="c" style="flex:0 0 105mm">
+      <h3>실기기에서 나온 문제 (11-23 폰 캡처)</h3>
+      <div class="strip">
+        <figure><img src="assets/lip_1123_matte.jpg"><figcaption><b>매트</b> 서리 무늬(광택 면적 44%)</figcaption></figure>
+        <figure><img src="assets/lip_1123_satin.jpg"><figcaption><b>새틴</b> 윗입술 띠 22%</figcaption></figure>
+        <figure><img src="assets/lip_1123_glossy.jpg"><figcaption><b>글로시</b> 윗입술 띠 26%</figcaption></figure>
+      </div>
+      <p class="note" style="margin:2px 0 5px"><b>그림 7</b> 출처 <span class="mono">발전도/매트·새틴·글로시찐.jpg</span>. 수치는 같은 증상을 얼굴 5장 헤드리스로 재현해 잰 값(AR_PROGRESS 11-23 (25)).</p>
+      <table class="t-xs">
+        <tr><th style="width:15%">시기</th><th>광택·질감 변화</th></tr>
+        <tr><td>10-25</td><td>글로시가 "투명한 걸 올린 것 같다" → 반사광 오판 수정</td></tr>
+        <tr><td>11-02</td><td>설문: 질감·광택 이상 75% → 하얀 광택 판을 작고 부드럽게</td></tr>
+        <tr><td>11-03</td><td>주름 따라 잔 반짝임 보존: 결 보존 0.87→0.99(공개 얼굴 5장)</td></tr>
+        <tr><td>11-13</td><td>C안: PC 합성이던 Overlay를 셰이더 안으로, detail로 벨벳·크림 매끈함</td></tr>
+        <tr><td>11-15</td><td>제형별 주름결 반사 cavity(벨벳 2.5 … 글로시 1.2)</td></tr>
+        <tr><td>11-23</td><td>D안: 매트 <span class="mono">glossScale 0.3</span>, 새틴·글로시 <span class="mono">rimTilt 0.3</span>, 글로시 비침 0.28→0</td></tr>
+      </table>
+    </div>
+    <div class="c">
+      <figure><img src="assets/finish_d.jpg"><figcaption><b>그림 8</b> 11-23 D안 전후(같은 얼굴·같은 제품). 매트 광택 면적 45→7%·평균 밝기 상승 +2.0→+0.8 L*, 글로시 띠 26→14%·최대 12.9→10.4 L*, 새틴 띠 22→12%. <span class="mono">research/data/makeup_gen/finish/fig_before_after.jpg</span> <span class="tag lim">헤드리스</span></figcaption></figure>
+      <figure style="margin-top:5px"><img src="assets/matte_surface.jpg" style="width:62%"><figcaption><b>그림 9</b> 매트 표면(11-13): 주름 골에는 반사를 주지 않아 "무광인데 주름은 보이는" 표면을 목표. <span class="mono">lip_edge_matte/matte_surface_compare.png</span></figcaption></figure>
+      <div class="box soft small" style="margin-top:4px"><b>판단.</b> 그림 8·9는 같은 입력의 전후라 렌더 결과가 바뀐 것은 확정입니다. 다만 헤드리스 정지 프레임이라 카메라 반사·반짝임 기여가 거의 0이므로, 폰에서 서리 무늬·띠가 실제로 줄었는지는 <b>미확인</b>입니다. AR이 결을 지우지는 않지만(주름 세기 1.1~1.6), 글로시는 진하게 칠할수록 자기 주름과의 상관이 0.92→0.79로 떨어집니다(11-23).</div>
+    </div>
+  </div>
+  <div class="ft"><span>05 질감·광택 · 그림 7~9 · 표 3</span><span>5 / 17</span></div>
+</section>
+
+<!-- P6 -->
+<section class="page">
+  <div class="hd"><span class="no">06</span><h2>6가지 립 제형 구현 현황</h2><span class="sub">이미지: 같은 맨얼굴·같은 색 #DD5A59·같은 프레임에 앱 렌더러(11-13 시점 코드) · 값: 현재 코드 <span class="mono">MATERIALS</span>(662행~)</span></div>
+  <div class="cols" style="margin-bottom:4px">
+    <figure class="c"><img src="assets/fin_bare.jpg"><figcaption><b>맨입술</b></figcaption></figure>
+    <figure class="c"><img src="assets/fin_matte.jpg"><figcaption><b>Matte</b></figcaption></figure>
+    <figure class="c"><img src="assets/fin_velvet.jpg"><figcaption><b>Velvet</b></figcaption></figure>
+    <figure class="c"><img src="assets/fin_cream.jpg"><figcaption><b>Cream</b></figcaption></figure>
+  </div>
+  <div class="cols" style="margin-bottom:3px">
+    <figure class="c"><img src="assets/fin_satin.jpg"><figcaption><b>Satin</b></figcaption></figure>
+    <figure class="c"><img src="assets/fin_sheer.jpg"><figcaption><b>Sheer</b></figcaption></figure>
+    <figure class="c"><img src="assets/fin_glossy.jpg"><figcaption><b>Glossy</b></figcaption></figure>
+    <div class="c"><img src="assets/c_finish.png" style="width:100%"></div>
+  </div>
+  <p class="note" style="margin:0 0 4px"><b>그림 10</b> 출처 <span class="mono">G:/내 드라이브/ppt/lip_ABC/png/*_current_ar.png</span>, <span class="mono">bare_lips.png</span>(PC 헤드리스, 진하기는 lip_ABC 설정). 11-15 cavity·11-23 D안은 반영 전 이미지. 그래프: <span class="mono">Claude outputs/VISHUE_립제형_고도화전후_비교.pdf</span> 1쪽 값(측정 범위가 달라 방향만 참고).</p>
+  <table class="t-xs">
+    <tr><th style="width:8%">제형</th><th style="width:7%">카탈로그</th><th style="width:16%">의도</th><th style="width:27%">현재 파라미터</th><th style="width:24%">현재 문제 (확정 / <span style="color:#5A4E9A">후보</span>)</th><th>개선 방향</th></tr>
+    <tr><td><b>Matte</b></td><td>39</td><td>무광, 선명, 주름 보임</td><td>rough 0.90 · spec 0.35 · a₁ 0.72 · detail 1.15 · overlay 0 · glossScale 0.3</td><td>확정: 폰 서리 무늬. 후보: 부분 밝기 불균일</td><td>D안 폰 확인(광택 면적)</td></tr>
+    <tr><td><b>Velvet</b></td><td>103</td><td>보송, 주름을 메워 매끈</td><td>rough 0.75 · a₁ 0.66 · detail 0.75 · overlay 0.35 · cavity 2.5</td><td><span style="color:#5A4E9A">후보: UI에서 매트 칩에 묶여 구분 안 됨</span></td><td>칩 분리 여부 결정</td></tr>
+    <tr><td><b>Cream</b></td><td>41</td><td>촉촉, 은은한 윤기</td><td>rough 0.55 · spec 0.60 · 비침 0.12 · detail 0.90 · overlay 0.30</td><td>확정: 입 벌림 시 이빨 쪽 덮음(부분 수정)</td><td>큰 입 벌림 수치 측정</td></tr>
+    <tr><td><b>Satin</b></td><td>101</td><td>은은한 새틴광</td><td>rough 0.42 · spec 0.85 · a₁ 0.50 · overlay 0.20 · rimTilt 0.3</td><td>확정: 폰 윗입술 띠. 제품색 ΔE 3.1→3.6</td><td>D안 폰 확인, 바이어스 제형 불일치 정리</td></tr>
+    <tr><td><b>Sheer</b></td><td>40</td><td>맑은 투명 발색</td><td>비침 0.80 · opacity 0.75 · a₁ 0.38</td><td>확정(헤드리스): 제품색 ΔE 6.8로 가장 멂</td><td>실착 사진 정답 기준 필요</td></tr>
+    <tr><td><b>Glossy</b></td><td>283</td><td>물광, 가장 높은 윤기</td><td>rough 0.16 · spec 1.15 · 비침 0 · overlay 0.10 · cavity 1.2 · rimTilt 0.3</td><td>확정: 폰 윗입술 띠. 위 조명이 아니면 광택 약함</td><td>정면 조명에서 반사 위치·강도 확인</td></tr>
+  </table>
+  <p class="note" style="margin-top:2px">Shimmer(10개)·립오일·밤도 구현돼 있으나 비교 자료가 없어 표에서 뺐습니다. UI 칩은 5개(벨벳→매트, 시어→글로시로 묶음, <span class="mono">lib/lipCare.ts</span>).</p>
+  <div class="ft"><span>06 제형 현황 · 그림 10 · 표 4</span><span>6 / 17</span></div>
+</section>
+
+<!-- P6-2 eyeshadow pearl by finish -->
+<section class="page">
+  <div class="hd"><span class="no">06-2</span><h2>아이섀도 제형별 펄감</h2><span class="sub">값은 현재 코드 <span class="mono">SHADOW_FINISHES</span>·<span class="mono">SHADOW_VORO</span>·<span class="mono">SHADOW_PRODUCT_OPACITY</span>(faceTrackerHtml.ts 715~740행 부근)</span></div>
+  <div class="cols">
+    <div class="c" style="flex:1.85">
+      <figure><img src="assets/shadow_finishes.jpg" style="width:74%"><figcaption><b>그림 A</b> 같은 맨얼굴(720×960 정지 프레임)·같은 색 #A6706D·진하기 0.65에 제형만 바꿔 <b>현재 코드로 한 번에 렌더</b>(헤드리스, 눈 한쪽 확대). 메탈릭은 글리터 칩 + 메탈 입자 제품으로 렌더. 제형 6종 모두 같은 조명 추정을 씀. <span class="tag lim">헤드리스</span></figcaption></figure>
+      <table class="t-xs" style="margin-top:4px">
+        <tr><th style="width:8%">제형</th><th style="width:15%">의도한 펄감 (참고 이미지)</th><th style="width:34%">현재 구현 (코드)</th><th style="width:25%">이번 렌더 측정 (눈꺼풀 변화 영역)</th><th>비고</th></tr>
+        <tr><td><b>매트</b></td><td>펄 없음, 보송, 가장 자연스러운 음영 (광택감 1/5)</td><td>입자 없음 · 덮임 0.95 · rough 1.0 · spec 0</td><td>반짝 알갱이 0 · ΔE00 <b>6.5</b>(가장 진함) · 밝기 평균 −7.2 L*</td><td>음영만 남음</td></tr>
+        <tr><td><b>새틴</b></td><td>아주 미세한 펄, 은은한 윤기</td><td>입자 없음, 넓은 비단 윤기 · 덮임 0.85 · rough 0.55 · spec 0.45</td><td>알갱이 0 · ΔE00 5.0 · 밝기 −5.7</td><td>입자 대신 넓은 윤기로 표현</td></tr>
+        <tr><td><b>쉬머</b></td><td>작고 고운 펄, 은은한 반짝임</td><td>보로노이 둥근 점 · 칸 0.85 · 밀도 0.75 · flash 1.2 · 미세 가루 0.5 · 덮임 0.65 · rough 0.4 · spec 0.4</td><td>알갱이 <b>1.3</b>/1,000화소 · 상위 1% +1.7 L* · ΔE00 3.8</td><td>가장 연하고 고움</td></tr>
+        <tr><td><b>글리터</b></td><td>크고 다양한 크기의 펄, 화려한 반짝임</td><td>칸 면 조각(틈 0.14) · 칸 2.0(11-19 v8) · 밀도 0.75 · flash 5.5 · 4갈래 별빛 1.0 · 무지개빛 0.35 · 덮임 0.9 · rough 0.2 · spec 0.95. 스팽 등 큰 입자 제품은 큰 칸 유지</td><td>알갱이 <b>8.5</b> · 상위 1% +16.1 L* · ΔE00 4.9 · 밝기 −3.4</td><td>입자 크기는 제품명으로 추정</td></tr>
+        <tr><td><b>메탈릭</b></td><td>밀도 높은 펄, 강하고 선명한 금속 광택 (광택감 4/5)</td><td>UI 칩 없음. 제품명에 메탈·포일·크롬이 있으면 글리터 칩이 이 경로 · 밀도 1.0 · flash 3.0 · 별빛 0.5 · 중앙 반사 1.0 · 덮임 0.85 · rough 0.3 · spec 1.0</td><td>알갱이 <b>8.3</b> · 상위 1% <b>+20.0</b> L* · 밝기 <b>+1.4</b>(유일하게 맨얼굴보다 밝아짐) · ΔE00 5.3</td><td>참고 이미지(글리터 5/5 &gt; 메탈릭 4/5)와 순서가 다름 — 아래 확인 필요</td></tr>
+        <tr><td><b>글로시</b></td><td>투명한 광택, 촉촉. 펄은 선택</td><td>입자 없음, 카메라에서 이미 빛받는 접힘에 흰 젖은 막 하이라이트 · 덮임 0.5 · rough 0.05 · spec 0.9</td><td>알갱이 0.5 · 상위 1% +10.2 L* · ΔE00 3.3</td><td>이 렌더에서 눈꺼풀 위 흰 띠로 보임(1장)</td></tr>
+      </table>
+      <p class="note" style="margin-top:3px">반짝 알갱이 = 주변 평균(가우시안 σ4)보다 L*가 10 넘게 밝은 화소 덩어리 수. 변화 영역 = 6제형 중 하나라도 맨얼굴과 ΔE00 &gt; 2가 된 화소(20,209화소). 한 얼굴·한 색·정지 프레임 1회 렌더라 <b>경향 참고용</b>이며, 이번 보고서 작업에서 현재 코드(커밋 <span class="mono">4c4262e7</span>)로 새로 잰 값입니다(앱 코드 변경 없음, <span class="mono">research/makeup_gen/ar_zone_render.mjs</span>).</p>
+    </div>
+    <div class="c">
+      <figure><img src="assets/shadow_ref.jpg" style="width:88%"><figcaption><b>그림 B</b> 팀이 쓴 제형별 참고 이미지(11-17 12:30). <b>AR 결과가 아니라 목표로 삼은 그림</b>이며 광택감 순서는 매트&lt;새틴&lt;쉬머&lt;메탈릭&lt;글리터&lt;글로시. <span class="mono">발전도/아이섀도우.png</span></figcaption></figure>
+      <div class="strip" style="display:block;margin-top:2px;width:78%">
+        <figure><img src="assets/shadow_ph_shimmer.jpg"><figcaption><b>쉬머</b> 실기기, 11-17 16:39 (v6 시기로 추정)</figcaption></figure>
+        <figure style="margin-top:2px"><img src="assets/shadow_ph_metallic.jpg"><figcaption><b>메탈릭</b> 실기기, 11-17 16:40 (v6 시기로 추정)</figcaption></figure>
+        <figure style="margin-top:2px"><img src="assets/shadow_ph_glitter.jpg"><figcaption><b>글리터</b> 실기기, 11-17 14:27 (v6 이전 큰 조각 방식으로 추정)</figcaption></figure>
+      </div>
+      <p class="note" style="margin:2px 0 0"><b>그림 C</b> 출처 <span class="mono">발전도/쉬머 펄 조절·메탈릭 펄·아이섀도우 글리터.jpg</span>(위쪽 상태 표시줄·아래 패널은 잘라 냄)</p>
+    </div>
+  </div>
+  <div class="cols" style="margin-top:3px;font-size:7.6pt">
+    <div class="c box soft" style="padding:4px 6px"><b>펄감을 어떻게 키워 왔나 (AR_PROGRESS 11-17~19).</b> v3(11-17) 제형마다 셰이더 경로 분리 → v6 보로노이 펄(쉬머 둥근 점 · 메탈릭·글리터 칸 면 조각) → v7 큰 입자 제품은 육각 조각, 메탈 제품은 메탈릭 경로 → <b>v8(11-19) 글리터 입자를 작게·쉬머보다 많게</b>(밝은 알갱이 1,000px당 74.9→90.4, 쉬머 6.9) → <b>v9(11-19) 색이 가려지지 않게</b>(제품 AR 덮임 글리터 0.14→0.9, 흰 날림 13→2).</div>
+    <div class="c box" style="padding:4px 6px"><b>확인 필요 (확정 아님).</b> ① 글리터와 메탈릭의 순서: 참고 이미지는 글리터가 더 강하지만, 이번 렌더는 알갱이 수가 비슷하고(8.5 vs 8.3) 메탈릭이 더 밝음(+1.4 vs −3.4). 얼굴 1장·색 1개라 다른 색·피부톤으로 확인해야 함. ② v8·v9(11-19)는 <b>폰에서 반짝임·진하기를 아직 확인하지 않음</b>(기록에 "미확인"). ③ 글로시의 흰 띠가 폰에서도 같은지 확인 필요.</div>
+  </div>
+  <div class="ft"><span>06-2 아이섀도 제형별 펄감 · 그림 A~C · 표 4-2</span><span>7 / 17</span></div>
+</section>
+
+<!-- P7 -->
+<section class="page">
+  <div class="hd"><span class="no">07</span><h2>구현 성과 및 검증 결과</h2><span class="sub">실제 측정값만. 기기·조건이 다른 값은 순위를 매기지 않음</span></div>
+  <div class="cols">
+    <div class="c" style="flex:1.1">
+      <h3>부위별 구현 상태 (코드 + 실기기 기록)</h3>
+      <table class="t-xs" style="margin-bottom:4px">
+        <tr><th style="width:24%">부위</th><th style="width:22%">상태</th><th>실기기 근거 · 한계</th></tr>
+        <tr><td>립 · 블러셔 · 파운데이션</td><td><span class="tag ok">사용 가능</span></td><td>10-30 실제 바른 사진과 반반 비교</td></tr>
+        <tr><td>섀도 · 아이라인 · 눈썹</td><td><span class="tag ok">사용 가능</span></td><td>11-07~17 폰 캡처. 눈 부위 정답 정확도 없음</td></tr>
+        <tr><td>하이라이터</td><td><span class="tag ok">사용 가능</span></td><td>11-11 캡처, 정량 평가 없음</td></tr>
+        <tr><td>쉐딩</td><td><span class="tag lim">제한적</span></td><td>11-05 HUD 점검, 정답 비교 미측정</td></tr>
+        <tr><td>마스카라 · 영상 룩</td><td><span class="tag lim">제한적</span></td><td>룩 전용 / 설윤 뿌까 1개</td></tr>
+        <tr><td>컨실러 등</td><td><span class="tag no">미구현</span></td><td><span class="mono">MakeupZone</span> 타입에 없음</td></tr>
+      </table>
+      <h3>성능·품질 측정값</h3>
+      <table class="t-xs">
+        <tr><th style="width:24%">지표</th><th>측정값 · 조건</th></tr>
+        <tr><td>FPS (실기기 HUD)</td><td>11-20 같은 폰: 창가 30 · 실내 25 · 스탠드 19 · 불 끈 방 15. 프레임 p50/p95 28~33 / 54~102 ms</td></tr>
+        <tr><td>얼굴 감지</td><td>폰 HUD 33.4 ms(11-08) · iOS 비교 평균 57.0 ms(11-01)</td></tr>
+        <tr><td>모델 로딩 · 메모리</td><td><span class="warnline">측정 자료 없음</span></td></tr>
+        <tr><td>안정화</td><td>흔들림 모의 20.8→2.2 px, 깜빡임 6.2→1.2 px, 실기기 녹화 얼굴 놓침 0/155</td></tr>
+        <tr><td>색 일치</td><td>착용 사진 20쌍 중앙값 3.89→3.97(11-02). 1명·1제품 실측 hex 1.13~2.97(11-23)</td></tr>
+        <tr><td>경계</td><td>LaPa 입술 F1 0.736(얼굴 점) · 11-05 위치 F1 0.840/기준 0.887</td></tr>
+        <tr><td>자연스러움</td><td>설문 5명: 입술 어색 100%(11-02). 이후 재설문 없음</td></tr>
+      </table>
+    </div>
+    <div class="c">
+      <h3>조명(촬영 환경) 대응 검증</h3>
+      <img src="assets/c_lightdir.png" style="width:100%">
+      <img src="assets/c_exposure.png" style="width:100%">
+      <p class="note" style="margin:0"><b>그림 11</b> 빛 방향(합성 얼굴)·어두운 방 화장 뜸(헤드리스). 안내 판정: 평가 분할 200장에서 정상 조명 저조도 오탐 0/0/0%(피부톤 3종), 역광 오탐 0%. 출처 <span class="mono">VISHUE_AR_조명대응_구조_변경_근거.pdf</span></p>
+    </div>
+    <div class="c" style="flex:0.8">
+      <div class="strip">
+        <figure><img src="assets/light_1.jpg"><figcaption>창가</figcaption></figure>
+        <figure><img src="assets/light_2.jpg"><figcaption>실내</figcaption></figure></div>
+      <div class="strip" style="margin-top:2px">
+        <figure><img src="assets/light_3.jpg"><figcaption>스탠드</figcaption></figure>
+        <figure><img src="assets/light_4.jpg"><figcaption>불 끈 방</figcaption></figure></div>
+      <p class="note" style="margin:1px 0 3px"><b>그림 12</b> 11-20 폰 캡처 1차(HUD). WB 잠금 성공, 저조도는 불 끈 방만 켜짐(정상). <span class="mono">발전도/1~4.*.jpg</span></p>
+      <div class="box small" style="border-color:#F2C9D5"><b>남은 문제</b><ul>
+        <li><span class="tag p1">P1</span> 립 D안 폰 미확인</li>
+        <li><span class="tag p1">P1</span> 공식몰 hex 색 오차(ΔE00 8.01)</li>
+        <li><span class="tag p1">P1</span> 입술 위치 F1 기준 미달</li>
+        <li><span class="tag p2">P2</span> 스탠드 방 저조도 미검출</li>
+        <li><span class="tag p2">P2</span> 어두운 피부 아랫입술 흰 뜸</li>
+        <li><span class="tag p2">P2</span> 어두운 방·다부위 15 fps 안팎</li>
+        <li><span class="tag p3">P3</span> 빛 방향 특허 검토, iOS WB 미확인</li></ul></div>
+    </div>
+  </div>
+  <div class="ft"><span>07 성과·검증 · 표 5~6 · 그림 11~12 (출처 AR_PROGRESS, 변천사, 얼굴추적 비교, 조명 근거 PDF)</span><span>8 / 17</span></div>
+</section>
+
+<!-- P7-1 mentoring p7 -->
+<section class="page">
+  <div class="hd"><span class="no">07-1</span><h2>부위별 AR 메이크업 결과 ① 입력 → 처리 → 출력</h2><span class="sub">왼쪽: 원본 <span class="mono">VISHUE_8회차멘토링_AR_메이크업모델_대응.pdf</span> 7쪽 (11-23)</span></div>
+  <div class="cols">
+    <figure style="flex:0 0 128mm"><img src="assets/mentor_p7.jpg" style="height:178mm;width:auto;border:1px solid var(--line)"></figure>
+    <div class="c">
+      <div class="box pinkbox"><h3>무엇을 보여 주는 쪽인가</h3>
+        같은 맨얼굴 정지 프레임에 <b>부위 하나씩만</b> 켜서, 앱과 같은 경로(<span class="mono">window.__kb.receive</span>)로 보낸 결과입니다. 8회차 멘토링에서 요청한 "부위별로 입력·처리·출력을 보여 달라"에 대한 답입니다.</div>
+      <h3 style="margin-top:6px">입력 → 처리 → 출력</h3>
+      <table class="t-xs">
+        <tr><th style="width:15%">입력</th><td>맨얼굴 720×960 정지 프레임을 가짜 카메라로 넣음. 부위 하나만 켠 <span class="mono">MakeupState</span>: 카탈로그 제품 hex(마스카라·하이라이터·쉐딩은 카탈로그에 hex가 없어 시연용 색), 진하기 0.65(마스카라 0.72)</td></tr>
+        <tr><th>처리</th><td>현재 <span class="mono">faceTrackerHtml.ts</span>를 그대로 빌드해 헤드리스 Edge에서 렌더. 조명·분할은 워밍업 뒤 고정해 모든 부위가 같은 조명 추정을 씀. 앱 소스는 바꾸지 않음(<span class="mono">research/makeup_gen/ar_zone_render.mjs</span>)</td></tr>
+        <tr><th>출력</th><td>부위별 화면 + 맨얼굴 대비 화소별 ΔE00으로 바뀐 면적·얼굴 밖 변화 계산(다음 쪽 표)</td></tr>
+      </table>
+      <h3 style="margin-top:6px">부위별 그리는 방식 (코드)</h3>
+      <table class="t-xs">
+        <tr><th style="width:22%">립</th><td>바깥−안쪽 입술 다각형, 제형별 층·광택 (<span class="mono">MATERIALS</span>)</td></tr>
+        <tr><th>블러셔</th><td>UV 타원, 반투명 가루</td></tr>
+        <tr><th>아이섀도</th><td>눈두덩→쌍꺼풀 선 + 눈꼬리 아래, 제형별 펄(06-2쪽)</td></tr>
+        <tr><th>아이라이너·마스카라</th><td>눈 캔버스(화면 공간), 가닥 생성</td></tr>
+        <tr><th>눈썹</th><td>국소 피부보다 어두운 화소(털)에만 색</td></tr>
+      </table>
+      <div class="box soft small" style="margin-top:6px"><b>위쪽 그림 4·5.</b> 그림 4는 글로시 조정 시행 예시(실측색 기본 · GA · GC · FPMT 목표)이고, 그림 5는 립 제형 D 적용 전후(매트·글로시·새틴)입니다. 이 보고서 05·06쪽의 D안·글로시 비침 0 조정과 같은 실험입니다.</div>
+      <p class="note" style="margin-top:4px">헤드리스 정지 프레임이라 폰 화면(카메라 반사·움직임)과 다를 수 있습니다. 마스카라는 앱에서 룩 AR에서만 칠합니다.</p>
+    </div>
+  </div>
+  <div class="ft"><span>07-1 부위별 결과 ① · 원본 8회차 멘토링 대응 PDF 7쪽</span><span>9 / 17</span></div>
+</section>
+
+<!-- P7-2 mentoring p8 -->
+<section class="page">
+  <div class="hd"><span class="no">07-2</span><h2>부위별 AR 메이크업 결과 ② 바뀐 면적과 얼굴 밖 변화</h2><span class="sub">왼쪽: 원본 <span class="mono">VISHUE_8회차멘토링_AR_메이크업모델_대응.pdf</span> 8쪽 (11-23)</span></div>
+  <div class="cols">
+    <figure style="flex:0 0 128mm"><img src="assets/mentor_p8.jpg" style="height:178mm;width:auto;border:1px solid var(--line)"></figure>
+    <div class="c">
+      <h3>부위별 측정값 (원본 표 그대로)</h3>
+      <table class="t-xs">
+        <tr><th style="width:17%">부위</th><th style="width:31%">제품 · hex · 질감</th><th>바뀐 면적<br>(얼굴 대비)</th><th>바뀐 곳<br>ΔE00 중앙값</th><th>얼굴 밖<br>평균 ΔE00</th></tr>
+        <tr><td>립</td><td>롬앤 03 베어 그레이프 #C3646C · glossy</td><td>2.7%</td><td>6.5</td><td>0.00</td></tr>
+        <tr><td>블러셔</td><td>네이밍 헤일로 #E5A69E · velvet</td><td>11.0%</td><td>2.9</td><td>0.00</td></tr>
+        <tr><td>아이섀도</td><td>홀리카홀리카 소이 로즈 #A6706D · velvet</td><td>6.5%</td><td>7.2</td><td>0.00</td></tr>
+        <tr><td>아이라이너</td><td>클리오 03 블랙 브라운 #60514B · matte</td><td>0.6%</td><td>12.0</td><td>0.00</td></tr>
+        <tr><td>마스카라</td><td>시연용 #1E1A18 · 진하기 0.72</td><td>1.2%</td><td>8.4</td><td>0.00</td></tr>
+        <tr><td>눈썹</td><td>코스노리 클라우드 토프 #644A3C · matte</td><td>1.0%</td><td>4.8</td><td>0.00</td></tr>
+        <tr><td>하이라이터</td><td>시연용 #F6E4D8 · shimmer</td><td>3.6%</td><td>2.5</td><td>0.00</td></tr>
+        <tr><td>쉐딩</td><td>시연용 #9A7A66 · matte</td><td>5.3%</td><td>3.3</td><td>0.02</td></tr>
+        <tr><td>파운데이션</td><td>헤라 블랙 쿠션 21N1 #EDD0B9 · cream</td><td>89.8%</td><td>7.2</td><td>0.39</td></tr>
+        <tr><td><b>전체 룩</b></td><td>위 9개 부위 동시</td><td><b>91.2%</b></td><td>6.9</td><td>0.39</td></tr>
+      </table>
+      <p class="note" style="margin-top:2px">바뀐 면적 = 맨얼굴 대비 ΔE00 &gt; 2인 화소 / 얼굴 윤곽 안 화소.</p>
+      <div class="box pinkbox small" style="margin-top:5px"><b>읽는 법</b><ul>
+        <li><b>얼굴 밖 변화가 0에 가까움</b>: 립·눈·볼 부위는 얼굴 밖을 전혀 건드리지 않았고(0.00), 쉐딩 0.02, 파운데이션 0.39만 경계 근처에서 조금 번졌습니다. 생성 모델이 입술 밖 피부까지 바꾼 것(11쪽, 2.36~6.40)과 대비됩니다.</li>
+        <li><b>바뀐 면적이 부위 크기를 따름</b>: 아이라이너 0.6%, 립 2.7%, 블러셔 11%, 파운데이션 89.8%로, 칠해야 할 곳에만 칠해졌습니다.</li>
+        <li><b>ΔE00 중앙값이 제형·역할을 따름</b>: 진한 선(아이라이너 12.0)과 진한 립·섀도(6.5~7.2)는 크게, 은은해야 할 블러셔(2.9)·하이라이터(2.5)는 작게 바뀌었습니다.</li></ul></div>
+      <p class="note" style="margin-top:4px">얼굴 1명·정지 프레임 1장 기준 헤드리스 값이며, 폰 실기기 측정이 아닙니다. 마스카라·하이라이터·쉐딩은 시연용 색이라 제품 정확도와 무관합니다.</p>
+    </div>
+  </div>
+  <div class="ft"><span>07-2 부위별 결과 ② · 원본 8회차 멘토링 대응 PDF 8쪽</span><span>10 / 17</span></div>
+</section>
+
+<!-- PL-2 lighting structure -->
+<section class="page">
+  <div class="hd"><span class="no">07-3</span><h2>조명 대응 구조 — 통제 · 보정 · 안내</h2><span class="sub">왼쪽: 원본 <span class="mono">VISHUE_AR_조명대응_구조_변경_근거.pdf</span> 2쪽 (11-20)</span></div>
+  <div class="cols">
+    <figure style="flex:0 0 128mm"><img src="assets/lightdoc_p2.jpg" style="height:178mm;width:auto;border:1px solid var(--line)"></figure>
+    <div class="c">
+      <div class="box pinkbox"><h3>목표</h3>
+        어떤 방에서 AR을 켜도 화장 색이 <b>그 조명에서 실제로 보일 모습</b>과 가깝게 나오게 합니다. 제품 hex는 바꾸지 않고, 조명을 세 단계로 다룹니다. 모든 계산은 폰 안의 AR 페이지(WebView)에서 하며 네이티브 모듈·서버는 쓰지 않습니다(Expo Go 유지).</div>
+      <table class="t-xs" style="margin-top:5px">
+        <tr><th style="width:17%">단계</th><th>하는 일</th><th style="width:30%">실사화에 주는 효과</th></tr>
+        <tr><td><b>① 환경 통제</b></td><td>배경 색이 안정되면 화이트밸런스 잠금, 잠금 직후 1.5초 판정 보류 + 0.5초마다 색 재측정 (<span class="mono">tryLockWhiteBalance · envCameraChanged</span>)</td><td>카메라가 스스로 색을 바꾸지 못해 <b>맨입술과 칠한 립이 따로 놀지 않음</b></td></tr>
+        <tr><td><b>② 자동 보정</b></td><td>조명 색(Gray World + Gray-Edge 75%), 빛 방향(후보 38개), 밝기(세션 기준)를 추정해 셰이더로 (<span class="mono">sampleScene · light · glideLight · exposureFor</span>)</td><td>립·블러셔가 <b>피부와 같은 빛·그늘</b> 아래 있는 것처럼 보임</td></tr>
+        <tr><td><b>③ 환경 판정</b></td><td>조명 조건 8개를 0.5초마다 진입/해제 판정, 앱이 한 번에 한 문장 표시 (<span class="mono">envEvaluate · lib/arEnv.ts</span>)</td><td>보정으로 못 맞추는 환경에서는 사용자가 <b>환경을 바꾸게</b> 함</td></tr>
+      </table>
+      <div class="box soft small" style="margin-top:5px"><b>설계 원칙 — 분석과 안내 분리.</b> 보정(②)은 판정(③) 결과를 읽지 않습니다. 문구 기준을 바꾸거나 문구가 잘못 떠도 화장 색 계산은 바뀌지 않습니다. 예외는 ①의 "카메라 변경 대기"뿐이고, 이것도 판정만 막고 보정은 더 자주 다시 측정합니다.</div>
+      <div class="box small" style="margin-top:5px"><b>폰에서 값을 확인하는 통로.</b> 디버그 HUD(화면 두 번 탭)에 <span class="mono">wb</span>(잠금 결과·색온도), <span class="mono">env</span>(켜진 조건), <span class="mono">low</span>(화면·피부 밝기·노이즈), <span class="mono">exp</span>(노출 시간·ISO) 줄이 있어 실제 폰 값으로 기준을 확인합니다(사용자에게는 안 보임).</div>
+      <p class="note" style="margin-top:4px">코드 위치는 현재 저장소와 같음을 확인(<span class="mono">components/ar/faceTrackerHtml.ts</span>, <span class="mono">lib/arEnv.ts</span>, <span class="mono">hooks/useArEnvMessage.ts</span>, 커밋 <span class="mono">38b1d52d</span>).</p>
+    </div>
+  </div>
+  <div class="ft"><span>07-3 조명 구조 · 원본 조명대응 근거 PDF 2쪽</span><span>11 / 17</span></div>
+</section>
+
+<!-- PL-4 lighting history -->
+<section class="page">
+  <div class="hd"><span class="no">07-4</span><h2>조명 대응 변경 이력 — 언제 무엇을 바꿨나</h2><span class="sub">왼쪽: 원본 <span class="mono">VISHUE_AR_조명대응_구조_변경_근거.pdf</span> 4쪽 (11-20)</span></div>
+  <div class="cols">
+    <figure style="flex:0 0 128mm"><img src="assets/lightdoc_p4.jpg" style="height:178mm;width:auto;border:1px solid var(--line)"></figure>
+    <div class="c">
+      <h3>흐름 요약</h3>
+      <table class="t-xs">
+        <tr><th style="width:20%">시기</th><th>무엇에 집중했나</th></tr>
+        <tr><td>10-25 ~ 10-29</td><td><b>조명 추정(보정)을 만듦</b>: 첫 초안 → WB 잠금 시점 제어 → 조명 급변 시 즉시 재추정, 안내 2개 연결</td></tr>
+        <tr><td>11-03 ~ 11-08</td><td><b>빛 방향 정확도</b>: 5단계 실험 후 후보 조명 맞추기만 켬, 가만히 있을 때 측정 간격을 늘려 fps 확보</td></tr>
+        <tr><td>11-19</td><td><b>안내(판정)를 처음 체계화</b>, 같은 날 근거를 다시 실험해 기준값 수정. 이어서 "피부톤에 따라 다르게 동작하는가", "카메라가 스스로 바꾼 것을 조명 변화로 오인하는가"를 차례로 다룸</td></tr>
+        <tr><td>11-20</td><td><b>폰 캡처 1차 검증</b>(창가·실내·스탠드·불 끈 방), HUD <span class="mono">low</span>·<span class="mono">exp</span> 줄 추가</td></tr>
+      </table>
+      <div class="box pinkbox small" style="margin-top:5px"><b>실사화 관점에서 중요한 변경</b><ul>
+        <li><b>11-19 (12) 노출을 세션 기준으로</b>: 어두운 피부가 어두운 방에서 화장만 2~4배 밝게 뜨던 것 → 약 1~1.5배</li>
+        <li><b>11-19 (14) 마지막 신뢰 조명 색 유지</b>: 색 벽·가까운 얼굴에서 립이 벽 색으로 물드는 것을 막음</li>
+        <li><b>11-19 (8~10) WB 잠금 직후 보류·재측정</b>: 카메라 색 출렁임을 조명 변화로 오인하지 않음</li>
+        <li><b>11-03~04 후보 조명 맞추기</b>: 광택·그늘이 실제 빛 쪽에 생김</li></ul></div>
+      <div class="box soft small" style="margin-top:5px"><b>근거를 바로잡은 기록.</b> 11-19에 처음 보고한 수치는 같은 데이터에서 기준을 고르고 성능까지 본 것이라 철회했고, 1,000장 고정 분할(선정 60 / 조정 20 / 평가 20)로 다시 실험했습니다. 이 보고서의 조명 수치는 모두 재실험 값입니다.</div>
+      <p class="note" style="margin-top:4px"><b>원본과 달라진 점:</b> 원본(11-20)은 "11-19 이후 작업은 아직 커밋하지 않은 작업 트리(<span class="mono">feat/ar-brow-shadow-ui</span>)"라고 적었습니다. 이 작업은 이후 11-23 커밋 <span class="mono">38b1d52d</span>에 들어갔습니다.</p>
+    </div>
+  </div>
+  <div class="ft"><span>07-4 조명 변경 이력 · 원본 조명대응 근거 PDF 4쪽</span><span>12 / 17</span></div>
+</section>
+
+<!-- PL-5 lighting before/after -->
+<section class="page">
+  <div class="hd"><span class="no">07-5</span><h2>초안 대비 변경 — 무엇을 왜 바꿨나</h2><span class="sub">왼쪽: 원본 <span class="mono">VISHUE_AR_조명대응_구조_변경_근거.pdf</span> 5쪽 (11-20)</span></div>
+  <div class="cols">
+    <figure style="flex:0 0 128mm"><img src="assets/lightdoc_p5.jpg" style="height:178mm;width:auto;border:1px solid var(--line)"></figure>
+    <div class="c">
+      <h3>바꾼 이유와 확인 결과 (원본 표에서 수치만 추림)</h3>
+      <table class="t-xs">
+        <tr><th style="width:19%">항목</th><th style="width:31%">초안 → 지금</th><th>확인 결과</th></tr>
+        <tr><td>WB 잠금 시점</td><td>카메라 시작 직후 → 얼굴 추적 + 배경 색 안정 후(2~6초)</td><td>카메라가 아직 맞추는 중에 잠가 틀린 색이 고정되던 문제 해소</td></tr>
+        <tr><td>잠금 직후</td><td>처리 없음 → 1.5초 판정 보류 + 0.5초 재측정</td><td>잠금 후 4초 색 오차(1초 출렁임) 0.195→<b>0.080</b>, 실제 램프 0.234→<b>0.077</b></td></tr>
+        <tr><td>조명 색</td><td>Gray World → GW 25% + Gray-Edge 75%</td><td>칠한 벽 이동 p90 37.8→<b>34.0°</b>, 색 조명 추적 p90 3.51→<b>2.16°</b></td></tr>
+        <tr><td>못 믿을 배경</td><td>흰색 쪽으로 약하게 → 마지막 신뢰 색 10초 유지</td><td>빨강·파랑 벽 셰이더 색 오차 0.16→<b>0</b></td></tr>
+        <tr><td>빛 방향</td><td>직선 맞춤 → 후보 38개 + 이어 주기</td><td>옆빛 14.7→<b>6.6°</b>, 강한 왼쪽 19.8→<b>1.6°</b>, 프레임당 변화 10.4→<b>2.3°</b></td></tr>
+        <tr><td>밝기(노출)</td><td>피부 ÷ 0.34 → 세션 기준 피부 밝기 대비</td><td>매우 어두운 피부 저조도 떠 보임 1.96~2.57→<b>1.01~1.27배</b></td></tr>
+        <tr><td>측정 간격</td><td>0.5초 고정 → 가만히 있으면 1.5초</td><td>조명 계산 22~35 ms가 fps를 깎던 것 완화</td></tr>
+        <tr><td>안내 문구</td><td>명세 2개·코드 0개 → 조명 조건 8개, 4개 언어</td><td>경계를 오가는 입력에서 전환 0회(단위 테스트)</td></tr>
+        <tr><td>피부톤 공정성</td><td>고려 없음 → 저조도 = 노이즈×√피부, 역광 = 세션 상대</td><td>고정 비율 역광은 정상 조명 어두운 피부를 크게 오판하던 것 해소</td></tr>
+      </table>
+      <div class="box soft small" style="margin-top:5px"><b>명세와 다른 점(원본에 기록됨).</b> 조명 변화 판정은 명세의 ΔE2000이 아니라 CIE76(기준 6)을 씁니다. 페이지에 ΔE2000 구현이 없기 때문입니다. 좌우 불균형(측광)은 정상 사진과 구분하지 못해(오탐 16% vs 재현 11%) 판정만 하고 문구는 숨겼습니다. 부위별 피부 측정(v2)은 아직 없습니다.</div>
+    </div>
+  </div>
+  <div class="ft"><span>07-5 초안 대비 변경 · 원본 조명대응 근거 PDF 5쪽</span><span>13 / 17</span></div>
+</section>
+
+<!-- P7-1 lighting color -->
+<section class="page">
+  <div class="hd"><span class="no">07-6</span><h2>조명 대응으로 높인 실사화 ① 조명 색</h2><span class="sub">왼쪽: 원본 <span class="mono">VISHUE_AR_조명대응_구조_변경_근거.pdf</span> 7쪽 (11-20)</span></div>
+  <div class="cols">
+    <figure style="flex:0 0 128mm"><img src="assets/lightdoc_p7.jpg" style="height:178mm;width:auto;border:1px solid var(--line)"></figure>
+    <div class="c">
+      <div class="box pinkbox"><h3>왜 메이크업 실사화에 필요한가</h3>
+        카메라에 찍힌 피부는 방 조명의 색을 띱니다. 노란 전구 아래에서 피부만 노랗고 립은 제품 색 그대로라면 <b>립이 얼굴 위에 따로 떠 보입니다</b>. 그래서 AR은 제품 hex는 그대로 두고, <b>지금 조명의 색을 곱해 "이 조명 아래에서 실제로 보일 색"</b>으로 칠합니다.</div>
+      <h3 style="margin-top:6px">무엇을 바꿨나</h3>
+      <table class="t-xs">
+        <tr><th style="width:24%">초안 (10-25)</th><td>배경 평균 색 = 조명 색(Gray World). 넓은 한 색 벽이 있으면 <b>벽 색을 조명으로 오인</b> → 빨간 벽 앞에서 립·블러셔가 빨갛게 물듦</td></tr>
+        <tr><th>지금 (11-19)</th><td>Gray World 25% + <b>Gray-Edge 75%</b>: 평균 색 대신 물체 경계의 색 차이를 봄. 고른 벽은 차이가 0이라 덜 반영되고, 경계에는 조명 색만 남음</td></tr>
+        <tr><th>못 믿을 때</th><td>배경이 15% 미만이거나 한 색이면 <b>마지막으로 믿을 수 있던 조명 색을 10초 유지</b>, 화면에는 "색상이 다르게 보일 수 있어요" 안내</td></tr>
+      </table>
+      <h3 style="margin-top:6px">결과 (오차 각도가 작을수록 정답 조명에 가까움)</h3>
+      <table class="t-xs">
+        <tr><th>장면</th><th>Gray World</th><th>지금</th></tr>
+        <tr><td>빨간 벽 (조명은 흰색)</td><td>22.6°</td><td><b>17.5°</b></td></tr>
+        <tr><td>노란 램프 (실제 노란 조명)</td><td>3.2°</td><td><b>1.4°</b></td></tr>
+        <tr><td>칠한 벽 앞 추정 이동 p90 (LaPa 80장)</td><td>37.8°</td><td><b>34.0°</b></td></tr>
+        <tr><td>노란·푸른 조명 추적 p90</td><td>3.51°</td><td><b>2.16°</b></td></tr>
+        <tr><td>빨강·파랑 벽 셰이더 색 오차</td><td>0.16</td><td><b>0</b> (신뢰 색 유지)</td></tr>
+      </table>
+      <div class="box soft small" style="margin-top:6px"><b>메이크업에서 달라진 점.</b> 실제 노란 조명에서는 립도 피부와 같이 노란 기를 띠고, 색 벽 앞에서는 립 색이 벽 색으로 물들지 않습니다. 립·블러셔가 피부와 <b>같은 빛 아래 있는 것처럼</b> 보이게 하는 단계입니다.</div>
+      <p class="note" style="margin-top:4px">수치는 합성·평가 분할 실험(공개 얼굴 LaPa, 비상업 연구용)이며 폰 실측이 아닙니다. 칠한 벽 문제는 완전히 해결되지 않았습니다(초록·베이지 벽 일부는 신뢰 검사를 통과해 막지 못함).</p>
+    </div>
+  </div>
+  <div class="ft"><span>07-6 조명 색 · 원본 조명대응 근거 PDF 7쪽</span><span>14 / 17</span></div>
+</section>
+
+<!-- P7-2 light direction / exposure -->
+<section class="page">
+  <div class="hd"><span class="no">07-7</span><h2>조명 대응으로 높인 실사화 ② 빛 방향과 밝기</h2><span class="sub">왼쪽: 원본 <span class="mono">VISHUE_AR_조명대응_구조_변경_근거.pdf</span> 8쪽 (11-20)</span></div>
+  <div class="cols">
+    <figure style="flex:0 0 128mm"><img src="assets/lightdoc_p8.jpg" style="height:178mm;width:auto;border:1px solid var(--line)"></figure>
+    <div class="c">
+      <div class="box pinkbox"><h3>빛 방향 — 광택과 그늘이 빛을 따라가게</h3>
+        립 광택의 위치, 윗입술 그늘, 블러셔 반사는 <b>빛이 오는 쪽</b>에 있어야 입체로 보입니다. 빛이 왼쪽에서 오는데 광택이 오른쪽에 생기면 바로 가짜처럼 보입니다.</div>
+      <table class="t-xs" style="margin-top:4px">
+        <tr><th style="width:26%">초안</th><td>얼굴 면 방향과 피부 밝기를 직선으로 맞춤. 코·눈썹 그림자를 몰라 <b>옆빛에서 오차가 큼</b></td></tr>
+        <tr><th>지금 (11-04 켬)</th><td>그 사람 얼굴 메시로 <b>후보 빛 38개</b>의 명암(그림자 포함)을 만들고 카메라와 가장 맞는 것을 고름. 매 프레임 부드럽게 이어 줌</td></tr>
+        <tr><th>결과 (합성 얼굴)</th><td>왼쪽 위 옆빛 14.7→<b>6.6°</b>, 오른쪽 약간 아래 9.1→<b>0.7°</b>, 강한 왼쪽 19.8→<b>1.6°</b>. 30° 계단 변화 때 프레임당 최대 변화 10.4→<b>2.3°</b>(광택이 튀지 않음)</td></tr>
+        <tr><th>실기기</th><td>11-04 폰에서 옆 조명일 때 <b>윤기·그늘이 빛 쪽을 따르는 것</b>을 확인하고 켬 <span class="tag ok">실기기</span></td></tr>
+      </table>
+      <div class="box pinkbox" style="margin-top:6px"><h3>밝기 — 어두운 방에서 화장만 떠 보이지 않게</h3>
+        초안 식(피부 밝기 ÷ 0.34)은 <b>어두운 피부를 "어두운 조명"으로 읽어</b> 하한에 걸리면 어두운 방에서 화장만 밝게 남았습니다. 지금은 <b>이 세션에서 정상 조명일 때의 피부 밝기를 기준</b>으로, 그보다 어두워진 만큼만 화장도 어둡게 합니다.</div>
+      <table class="t-xs" style="margin-top:4px">
+        <tr><th>매우 어두운 피부 · 떠 보임 지수 (1 = 정상)</th><th>이전 식</th><th>지금</th></tr>
+        <tr><td>조명 0.2배</td><td>1.96~2.57</td><td><b>1.01~1.27</b></td></tr>
+        <tr><td>조명 0.1배</td><td>2.58~3.95</td><td><b>1.03~1.50</b></td></tr>
+        <tr><td>정상 조명 렌더 변화</td><td colspan="2">ΔE ≤ 0.2 (밝은 곳은 그대로)</td></tr>
+      </table>
+      <div class="box soft small" style="margin-top:6px"><b>메이크업에서 달라진 점.</b> 광택·그늘이 실제 빛 방향에 맞고, 어두운 방에서도 립이 피부와 <b>같이 어두워져</b> "붙인 스티커"처럼 뜨지 않습니다. 피부톤이 어두운 사용자도 같은 기준으로 보정됩니다.</div>
+      <p class="note" style="margin-top:4px">밝기 수치는 헤드리스 렌더. 처음부터 어두운 곳에서 시작하면 기준이 없어 이전 식이 동작합니다. 후보 조명 맞추기는 특허 US 11,030,798과 원리가 겹쳐 상용 전 검토가 필요합니다.</p>
+    </div>
+  </div>
+  <div class="ft"><span>07-7 빛 방향·밝기 · 원본 조명대응 근거 PDF 8쪽</span><span>15 / 17</span></div>
+</section>
+
+<!-- P7-3 guidance images -->
+<section class="page">
+  <div class="hd"><span class="no">07-8</span><h2>조명 대응으로 높인 실사화 ③ 보정으로 안 되는 환경은 알려 주기</h2><span class="sub">왼쪽: 원본 <span class="mono">VISHUE_AR_조명대응_구조_변경_근거.pdf</span> 10쪽 (11-20)</span></div>
+  <div class="cols">
+    <figure style="flex:0 0 128mm"><img src="assets/lightdoc_p10.jpg" style="height:178mm;width:auto;border:1px solid var(--line)"></figure>
+    <div class="c">
+      <div class="box pinkbox"><h3>왜 안내가 실사화의 일부인가</h3>
+        너무 어둡거나 역광이면 카메라 영상 자체에 피부·입술 정보가 부족해, 보정을 해도 색을 믿기 어렵습니다. 이때 억지로 칠하는 대신 <b>사용자가 환경을 바꾸도록 알려</b>, 결국 실제와 가까운 화면에서 체험하게 합니다.</div>
+      <h3 style="margin-top:6px">상황별 판정과 문구 (조명 관련 8조건)</h3>
+      <table class="t-xs">
+        <tr><th style="width:20%">상황</th><th>켜지는 기준 (요약)</th><th style="width:34%">평가 분할 결과</th></tr>
+        <tr><td>어두움</td><td>화면 밝기 &lt; 0.03, 또는 노이즈×√피부 &gt; 0.0128 (피부톤 영향 제거)</td><td>정상 조명 오탐 0/0/0%(피부톤 3종), 어두운 방 87.5~97.5%</td></tr>
+        <tr><td>역광</td><td>세션 기준의 0.5배 이하 + 배경/얼굴 비 2배 이상</td><td>오탐 0%, 재현 52.5~75%</td></tr>
+        <tr><td>과다 노출</td><td>피부의 15% 이상이 하얗게 날아감</td><td>재현 79~85%</td></tr>
+        <tr><td>노란·푸른 조명</td><td>배경 r/b &gt; 2.0 / &lt; 0.7</td><td>노란 LaPa 70%, 푸른 21%</td></tr>
+        <tr><td>조명 변화 · 추정 중</td><td>노출·조명 색 급변 / 배경 신뢰도 &lt; 0.5</td><td>정지 이미지로 보일 수 없음</td></tr>
+        <tr><td>좌우 불균형</td><td>판정만, 문구 숨김</td><td>정상 사진과 구분 못 함</td></tr>
+      </table>
+      <div class="box small" style="margin-top:5px"><b>표시 규칙.</b> 1.5초 계속돼야 켜지고 1초 괜찮으면 꺼짐(깜빡임 방지) · 한 번에 1문장 · 최소 3초 · 같은 문구 10초 안 재표시 · 4개 언어.</div>
+      <div class="box soft small" style="margin-top:5px"><b>폰 1차 확인 (11-20).</b> 저조도 문구는 불 끈 방에서만 켜짐(창가·실내 정상) <span class="tag ok">실기기</span>. <b>스탠드만 켠 방은 못 잡음</b>: 화면 속 전등이 평균 밝기를 올림 → 노출 시간·ISO 값으로 판정하는 것이 다음 후보.</div>
+      <p class="note" style="margin-top:4px">왼쪽 원본의 상황별 사진은 <b>같은 얼굴 사진에 조명을 합성한 설명용 이미지</b>이며 실제 폰 캡처가 아닙니다. 문구 위치·모양은 앱 화면과 다를 수 있습니다.</p>
+    </div>
+  </div>
+  <div class="ft"><span>07-8 상황별 안내 · 원본 조명대응 근거 PDF 10쪽</span><span>16 / 17</span></div>
+</section>
+
+<!-- P8 -->
+<section class="page">
+  <div class="hd"><span class="no">08</span><h2>최신 연구 및 향후 개발 방향</h2><span class="sub">8회차 멘토링(11-19) 후속 생성 모델 실험(11-20~23, 앱 코드 변경 없음)</span></div>
+  <div class="cols">
+    <div class="c" style="flex:1.3">
+      <table class="t-xs">
+        <tr><th style="width:21%">방법</th><th style="width:13%">진행 단계</th><th>환경 · 시간</th><th style="width:15%">입술 ΔE00</th></tr>
+        <tr><td><b>VISHUE AR</b></td><td>실기기 실시간</td><td>폰 WebView 15~30 fps</td><td>2.65 (카탈로그 #9E6364)<br>1.13~2.97 (실측 hex)</td></tr>
+        <tr><td><b>MagicMakeup</b></td><td>생성·평가</td><td>RunPod RTX A6000, 장당 187~195 s, 1024</td><td>3.50</td></tr>
+        <tr><td>Stable-Makeup</td><td>생성·평가</td><td>Tesla T4, 장당 31~32 s, 512</td><td>2.70</td></tr>
+        <tr><td>FPMT</td><td>생성·평가</td><td>노트북 CPU, 장당 3.1~4.1 s</td><td>0.69*</td></tr>
+        <tr><td>ART · DreamMakeup</td><td>조사만</td><td>—</td><td>—</td></tr>
+      </table>
+      <img src="assets/c_gen.png" style="width:100%;margin-top:3px">
+      <p class="note" style="margin:0"><b>그림 13</b> 같은 맨얼굴·같은 제품(롬앤 쥬시 래스팅 틴트 03 베어 그레이프), 정답 = 같은 사람이 실제로 바른 사진. 1명·1제품. *FPMT는 정답 사진을 레퍼런스로 넣어 순환(상한 참고). 출처 <span class="mono">research/makeup_gen/COMPARE_LOCAL.md</span></p>
+    </div>
+    <div class="c">
+      <figure><img src="assets/gen_compare.jpg"><figcaption><b>그림 14</b> 방법별 결과. B AR default는 카탈로그 #9E6364로 다시 렌더한 것(<span class="mono">research/data/makeup_gen/ar_out_catalog/ar_lip_0.png</span>), 나머지 칸은 <span class="mono">eval/fig_compare_all.png</span>와 같음.</figcaption></figure>
+      <div class="box pinkbox small" style="margin-top:4px"><b>기존 AR과 MagicMakeup 비교에서 알게 된 것</b><ul>
+        <li>AR 오차의 주원인은 렌더러가 아니라 <b>입력 색</b>입니다. 같은 AR이 공식몰 hex #C77276이면 8.01, 카탈로그 #9E6364이면 2.65, 착용 사진에서 잰 hex이면 1.13~2.97입니다. <span class="note">카탈로그 #9E6364는 착용 사진 입술색과 가장 가까운 glossy 셰이드를 골라 쓴 값이라 낮게 나온 것이며, 착용 사진의 제품(롬앤 03 베어 그레이프)과 같은 제품이 아닙니다.</span></li>
+        <li>MagicMakeup은 입술 밖 피부도 바꾸고(ΔE00 2.36) 장당 3분이 걸려 실시간 AR을 대신할 수 없습니다. 얼굴 사진을 서버 GPU로 보내야 해 개인정보 원칙과도 맞지 않습니다.</li>
+        <li>생성 결과와 실시간 AR은 목적(사진 1장 vs 초당 15~30장)과 조건이 달라 같은 줄에서 우열을 가리지 않습니다.</li></ul></div>
+      <div class="box small" style="margin-top:4px"><b>다음 비교 계획 (MagicMakeup · FPMT vs AR)</b><ul>
+        <li>얼굴 1명·제품 1개 → <b>여러 피부톤 × 제형 3종(매트·새틴·글로시)</b>으로 확대, 같은 지표(입술 ΔE00·입술 밖 ΔE00·주름 상관)</li>
+        <li>제품마다 실제 바른 사진을 확보해 정답으로 사용(플래시 샘플 프로토콜)</li>
+        <li>생성 모델은 앱 밖에서 <b>AR에 넣을 색·진하기를 정하는 오프라인 도구</b>로만 검토. 새 GPU 실험은 계획 확정 후 진행</li></ul></div>
+    </div>
+    <div class="c" style="flex:0.85">
+      <div class="box soft small"><h3>향후 개발 방향</h3>
+        <b>다음 단계(발표 전)</b><ul><li>D안 립 제형 폰 재캡처·지표 확인</li><li>실측 제품 색 확보 → 색 정확도</li><li>LaPa 입술 위치 재측정</li><li>HUD <span class="mono">perf</span>로 성능표 통일</li></ul>
+        <b style="display:block;margin-top:3px">연구·실기기 검증</b><ul><li>설문 v5(평가자 20명 이상)</li><li>피부톤별 립·조명 공정성</li><li>iOS WB·성능, 빛 방향 특허 검토</li></ul></div>
+      <div class="box pinkbox small" style="margin-top:4px"><h3>5줄 요약</h3>
+        <ol style="margin:0;padding-left:14px;line-height:1.45">
+          <li>처음엔 입술에 색 스티커를 붙인 것처럼 보였고 화장이 늦게 따라왔습니다.</li>
+          <li>주름·그늘은 카메라 것을 두고 색만 바꾸는 방식으로, 바른 입술에 가까워졌습니다.</li>
+          <li>8부위로 늘리고, 매트·글로시 같은 제형 차이를 광택과 결로 표현했습니다.</li>
+          <li>방의 조명을 읽어 색에 반영하고, 어둡거나 역광이면 알려 줍니다.</li>
+          <li>남은 과제는 실제 제품 색 측정과, 최근 수정의 실기기 확인입니다.</li></ol></div>
+    </div>
+  </div>
+  <div class="ft"><span>08 연구·향후 방향 · 표 7 · 그림 13~14 · 작성 2026-11-24, 기존 코드 변경 없음</span><span>17 / 17</span></div>
+</section>
+</body></html>
